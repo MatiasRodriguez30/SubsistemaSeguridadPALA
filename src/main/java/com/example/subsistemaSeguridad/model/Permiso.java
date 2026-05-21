@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import java.time.Instant;
 
 @Entity
 @Table(name = "permisos")
@@ -19,9 +20,12 @@ public class Permiso {
     private Long id;
     
     @Column(nullable = false)
-    private String nombre;
+    private String nombrePermiso;
     
-    private String descripcion;
+    @Column(nullable = false)
+    private Instant fechaAltaPermiso;
+    
+    private Instant fechaBajaPermiso;
     
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "sistema_id", nullable = false)
