@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import java.time.Instant;
 
 @Entity
 @Table(name = "rol_permiso")
@@ -18,11 +19,14 @@ public class RolPermiso {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "rol_id", nullable = false)
-    private Rol rol;
+    @Column(name = "contador_permiso")
+    private int contadorPermiso;
     
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "permiso_id", nullable = false)
     private Permiso permiso;
+    
+    private Instant fechaAsignacionPermiso;
+    
+    private Instant fechaDesasignacionPermiso;
 }
