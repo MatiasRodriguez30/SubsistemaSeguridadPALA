@@ -1,4 +1,4 @@
-package com.example.subsistemaSeguridad.model;
+package com.example.subsistemaSeguridad.usuariorol;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -7,13 +7,16 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.time.Instant;
 
+import com.example.subsistemaSeguridad.rol.Rol;
+import com.example.subsistemaSeguridad.usuariorol.exception.UsuarioRolDadoDeBajaException;
+
 @Entity
 @Table(name = "usuario_rol")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class UsuarioRol {
+public class SUsuarioRol {
     
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -29,4 +32,15 @@ public class UsuarioRol {
     private Instant fechaAsignacionUsuarioRol;
     
     private Instant fechaBajaRolUsuario;
+
+    public boolean estaDadoDeBaja() {
+        return this.fechaBajaRolUsuario != null;
+    }
+
+    public void darDeBaja() {
+        if (estaDadoDeBaja()) {
+            throw new UsuarioRolDadoDeBajaException(this.id);
+        }
+        this.fechaBajaRolUsuario = Instant.now();
+    }
 }
