@@ -1,4 +1,4 @@
-package com.example.subsistemaSeguridad.model;
+package com.example.subsistemaSeguridad.rolpermiso;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -6,6 +6,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.time.Instant;
+
+import com.example.subsistemaSeguridad.permiso.Permiso;
+import com.example.subsistemaSeguridad.rolpermiso.exception.RolPermisoDadoDeBajaException;
 
 @Entity
 @Table(name = "rol_permiso")
@@ -29,4 +32,15 @@ public class RolPermiso {
     private Instant fechaAsignacionPermiso;
     
     private Instant fechaDesasignacionPermiso;
+
+    public boolean estaDadoDeBaja() {
+        return this.fechaDesasignacionPermiso != null;
+    }
+
+    public void darDeBaja() {
+        if (estaDadoDeBaja()) {
+            throw new RolPermisoDadoDeBajaException(this.id);
+        }
+        this.fechaDesasignacionPermiso = Instant.now();
+    }
 }
