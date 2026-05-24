@@ -5,7 +5,10 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
 import com.example.subsistemaSeguridad.sistema.Sistema;
 import com.example.subsistemaSeguridad.rolpermiso.RolPermiso;
@@ -38,14 +41,14 @@ public class Rol {
     @JoinColumn(name = "sistema_id")
     private Sistema sistema;
 
-    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
-    @JoinColumn(name = "rol_id")
-    private java.util.List<RolPermiso> permisosRol;
+    @OneToMany(mappedBy = "rol", cascade = CascadeType.ALL)
+    private List<RolPermiso> permisosRol = new ArrayList<>();
 
     public void actualizarDatos(RolUpdateDTO dto) {
         if (dto.nombreRol() != null) {
             this.setNombreRol(dto.nombreRol());
         }
+
         if (dto.descripcionRol() != null) {
             this.setDescripcionRol(dto.descripcionRol());
         }
@@ -59,7 +62,9 @@ public class Rol {
         if (estaDadoDeBaja()) {
             throw new RolDadoDeBajaException(this.id);
         }
+
         this.fechaBajaRol = Instant.now();
+
         if (this.permisosRol != null) {
             for (RolPermiso rp : this.permisosRol) {
                 if (!rp.estaDadoDeBaja()) {

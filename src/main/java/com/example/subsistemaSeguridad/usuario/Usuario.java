@@ -5,7 +5,9 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 
 import com.example.subsistemaSeguridad.sistema.Sistema;
@@ -40,17 +42,15 @@ public class Usuario {
     @JoinColumn(name = "sistema_id")
     private Sistema sistema;
 
-    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
-    @JoinColumn(name = "usuario_id")
-    private List<UsuarioRol> rolesUsuario;
+    @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL)
+    private List<UsuarioRol> rolesUsuario = new ArrayList<>();
 
     public void actualizarDatos(UsuarioUpdateDTO dto) {
         if (dto.mailUsuario() != null) {
             this.setMailUsuario(dto.mailUsuario());
         }
-        if (dto.passwordUsuario() != null) {
-            this.setPasswordUsuario(dto.passwordUsuario());
-        }
+
+        // La contraseña se actualiza desde el service. (PasswordEncoder en UsuarioServiceImpl)
     }
 
     public boolean estaDadoDeBaja() {
@@ -61,7 +61,9 @@ public class Usuario {
         if (estaDadoDeBaja()) {
             throw new UsuarioDadoDeBajaException(this.id);
         }
+
         this.fechaBajaUsuario = Instant.now();
+
         if (this.rolesUsuario != null) {
             for (UsuarioRol ur : this.rolesUsuario) {
                 if (!ur.estaDadoDeBaja()) {

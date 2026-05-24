@@ -24,6 +24,7 @@ public class RolPermisoMapper {
     public RolPermiso toEntity(RolPermisoCreateDTO dto) {
         Permiso permiso = permisoRepository.findById(dto.permisoId())
                 .orElseThrow(() -> new PermisoNotFoundException(dto.permisoId()));
+
         if (permiso.estaDadoDeBaja()) {
             throw new PermisoDadoDeBajaException(permiso.getId());
         }
@@ -31,7 +32,7 @@ public class RolPermisoMapper {
         RolPermiso rolPermiso = new RolPermiso();
         rolPermiso.setPermiso(permiso);
         rolPermiso.setFechaAsignacionPermiso(Instant.now());
-        
+
         return rolPermiso;
     }
 
@@ -41,7 +42,7 @@ public class RolPermisoMapper {
                 entity.getContadorPermiso(),
                 entity.getFechaAsignacionPermiso(),
                 !entity.estaDadoDeBaja(),
-                null, // No tenemos referencia directa al rol desde aquí
+                entity.getRol() != null ? entity.getRol().getId() : null,
                 entity.getPermiso() != null ? entity.getPermiso().getId() : null
         );
     }

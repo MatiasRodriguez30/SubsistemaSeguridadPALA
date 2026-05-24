@@ -8,6 +8,10 @@ import java.util.Optional;
 
 @Repository
 public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
+    //agrego metodos para busqueda por email (auth)
     List<Usuario> findAllByFechaBajaUsuarioIsNull();
+
     Optional<Usuario> findByIdAndFechaBajaUsuarioIsNull(Long id);
+
+    Optional<Usuario> findByMailUsuarioAndFechaBajaUsuarioIsNull(String mailUsuario);
 }

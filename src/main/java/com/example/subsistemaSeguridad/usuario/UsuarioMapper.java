@@ -11,9 +11,12 @@ public class UsuarioMapper {
 
     public Usuario toEntity(UsuarioCreateDTO dto) {
         Usuario usuario = new Usuario();
+
         usuario.setMailUsuario(dto.mailUsuario());
-        usuario.setPasswordUsuario(dto.passwordUsuario());
+
+        // No seteamos la contraseña acá porque debe guardarse encriptada (UsuarioServiceImpl)
         usuario.setFechaAltaUsuario(Instant.now());
+
         return usuario;
     }
 
