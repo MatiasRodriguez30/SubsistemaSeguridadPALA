@@ -5,7 +5,6 @@ import com.example.subsistemaSeguridad.usuario.UsuarioRepository;
 import com.example.subsistemaSeguridad.usuario.exception.UsuarioDadoDeBajaException;
 import com.example.subsistemaSeguridad.usuario.exception.UsuarioNotFoundException;
 import com.example.subsistemaSeguridad.usuariorol.dto.UsuarioRolCreateDTO;
-import com.example.subsistemaSeguridad.usuariorol.exception.UsuarioRolDadoDeBajaException;
 import com.example.subsistemaSeguridad.usuariorol.exception.UsuarioRolNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -22,7 +21,11 @@ public class UsuarioRolServiceImpl implements UsuarioRolService {
     private final UsuarioRolMapper usuarioRolMapper;
 
     @Autowired
-    public UsuarioRolServiceImpl(UsuarioRolRepository usuarioRolRepository, UsuarioRepository usuarioRepository, UsuarioRolMapper usuarioRolMapper) {
+    public UsuarioRolServiceImpl(
+            UsuarioRolRepository usuarioRolRepository,
+            UsuarioRepository usuarioRepository,
+            UsuarioRolMapper usuarioRolMapper
+    ) {
         this.usuarioRolRepository = usuarioRolRepository;
         this.usuarioRepository = usuarioRepository;
         this.usuarioRolMapper = usuarioRolMapper;
@@ -31,23 +34,30 @@ public class UsuarioRolServiceImpl implements UsuarioRolService {
     @Override
     @Transactional
     public UsuarioRol createUsuarioRol(UsuarioRolCreateDTO dto) {
-        // Encontrar el aggregate root
+
         Usuario usuario = usuarioRepository.findById(dto.usuarioId())
                 .orElseThrow(() -> new UsuarioNotFoundException(dto.usuarioId()));
-                
+
         if (usuario.estaDadoDeBaja()) {
             throw new UsuarioDadoDeBajaException(usuario.getId());
         }
 
-        final UsuarioRol usuarioRol = usuarioRolMapper.toEntity(dto);
-        
-        int contador = usuario.getRolesUsuario().size() + 1;
+        UsuarioRol usuarioRol = usuarioRolMapper.toEntity(dto);
+
+        // IMPORTANTE:
+        // Este es el lado dueño de la relación con Usuario.
+        usuarioRol.setUsuario(usuario);
+
+        int contador = usuario.getRolesUsuario() != null
+                ? usuario.getRolesUsuario().size() + 1
+                : 1;
+
         usuarioRol.setContadorUsuarioRol(contador);
-        
-        // El guardado se delega al Aggregate Root (Usuario)
+
         usuario.getRolesUsuario().add(usuarioRol);
+
         usuarioRepository.save(usuario);
-        
+
         return usuarioRol;
     }
 
@@ -64,10 +74,11 @@ public class UsuarioRolServiceImpl implements UsuarioRolService {
     @Override
     @Transactional
     public void deleteUsuarioRol(Long id) {
-        final UsuarioRol usuarioRol = usuarioRolRepository.findById(id)
+        UsuarioRol usuarioRol = usuarioRolRepository.findById(id)
                 .orElseThrow(() -> new UsuarioRolNotFoundException(id));
 
         usuarioRol.darDeBaja();
+
         usuarioRolRepository.save(usuarioRol);
     }
 }

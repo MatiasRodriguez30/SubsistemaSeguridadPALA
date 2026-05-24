@@ -5,6 +5,7 @@ import com.example.subsistemaSeguridad.usuario.dto.UsuarioUpdateDTO;
 import com.example.subsistemaSeguridad.usuario.exception.UsuarioDadoDeBajaException;
 import com.example.subsistemaSeguridad.usuario.exception.UsuarioNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,17 +17,27 @@ public class UsuarioServiceImpl implements UsuarioService {
 
     private final UsuarioRepository usuarioRepository;
     private final UsuarioMapper usuarioMapper;
+    private final PasswordEncoder passwordEncoder;      //PASWORD ENCRIPTADA
 
     @Autowired
-    public UsuarioServiceImpl(UsuarioRepository usuarioRepository, UsuarioMapper usuarioMapper) {
+    public UsuarioServiceImpl(
+            UsuarioRepository usuarioRepository,
+            UsuarioMapper usuarioMapper,
+            PasswordEncoder passwordEncoder
+    ) {
         this.usuarioRepository = usuarioRepository;
         this.usuarioMapper = usuarioMapper;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
     @Transactional
     public Usuario createUsuario(UsuarioCreateDTO dto) {
         final Usuario usuario = usuarioMapper.toEntity(dto);
+
+        String passwordEncriptada = passwordEncoder.encode(dto.passwordUsuario());
+        usuario.setPasswordUsuario(passwordEncriptada);
+
         return usuarioRepository.save(usuario);
     }
 
@@ -50,7 +61,14 @@ public class UsuarioServiceImpl implements UsuarioService {
             throw new UsuarioDadoDeBajaException(id);
         }
 
-        usuario.actualizarDatos(dto);
+        if (dto.mailUsuario() != null) {
+            usuario.setMailUsuario(dto.mailUsuario());
+        }
+
+        if (dto.passwordUsuario() != null) {
+            String passwordEncriptada = passwordEncoder.encode(dto.passwordUsuario());
+            usuario.setPasswordUsuario(passwordEncriptada);
+        }
 
         return usuarioRepository.save(usuario);
     }

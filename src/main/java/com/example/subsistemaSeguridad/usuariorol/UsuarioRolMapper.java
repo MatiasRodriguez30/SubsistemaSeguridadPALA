@@ -24,6 +24,7 @@ public class UsuarioRolMapper {
     public UsuarioRol toEntity(UsuarioRolCreateDTO dto) {
         Rol rol = rolRepository.findById(dto.rolId())
                 .orElseThrow(() -> new RolNotFoundException(dto.rolId()));
+
         if (rol.estaDadoDeBaja()) {
             throw new RolDadoDeBajaException(rol.getId());
         }
@@ -31,7 +32,7 @@ public class UsuarioRolMapper {
         UsuarioRol usuarioRol = new UsuarioRol();
         usuarioRol.setRol(rol);
         usuarioRol.setFechaAsignacionUsuarioRol(Instant.now());
-        
+
         return usuarioRol;
     }
 
@@ -41,7 +42,7 @@ public class UsuarioRolMapper {
                 entity.getContadorUsuarioRol(),
                 entity.getFechaAsignacionUsuarioRol(),
                 !entity.estaDadoDeBaja(),
-                null, // No tenemos referencia directa al usuario desde aquí
+                entity.getUsuario() != null ? entity.getUsuario().getId() : null,
                 entity.getRol() != null ? entity.getRol().getId() : null
         );
     }
