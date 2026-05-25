@@ -7,6 +7,7 @@ public record LoginResponseDTO(
         String tipo,
         Long usuarioId,
         String mailUsuario,
+        String systemKey,
         List<String> roles,
         List<String> permisos
 ) {}

@@ -5,7 +5,11 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
 import java.time.Instant;
+import java.util.Locale;
+import java.util.Optional;
+import java.util.regex.Pattern;
 
 import com.example.subsistemaSeguridad.usuario.Usuario;
 import com.example.subsistemaSeguridad.sistema.dto.SistemaUpdateDTO;
@@ -38,13 +42,30 @@ public class Sistema {
     @JoinColumn(name = "usuario_id")
     private Usuario usuario;
 
+    private static final Pattern KEY_INVALID_PATTERN = Pattern.compile("[^A-Z0-9_]");
+
     public void actualizarDatos(SistemaUpdateDTO dto) {
-        if (dto.nombreSistema() != null) {
-            this.setNombreSistema(dto.nombreSistema());
+        Optional.ofNullable(dto.nombreSistema()).ifPresent(this::setNombreSistema);
+    }
+
+    public void asignarKeySistema(String keySistema) {
+        this.keySistema = keySistema;
+    }
+
+    public static String normalizarBaseKey(String nombreSistema) {
+        String normalized = java.text.Normalizer.normalize(nombreSistema, java.text.Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "")
+                .toUpperCase(Locale.ROOT)
+                .replace(' ', '_');
+
+        normalized = KEY_INVALID_PATTERN.matcher(normalized).replaceAll("");
+        normalized = normalized.replaceAll("_+", "_").replaceAll("^_|_$", "");
+
+        if (normalized.isBlank()) {
+            return "SISTEMA";
         }
-        if (dto.keySistema() != null) {
-            this.setKeySistema(dto.keySistema());
-        }
+
+        return normalized;
     }
 
     public boolean estaDadoDeBaja() {

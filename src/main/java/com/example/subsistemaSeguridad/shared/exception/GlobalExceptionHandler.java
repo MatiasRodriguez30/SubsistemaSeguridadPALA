@@ -3,8 +3,10 @@ package com.example.subsistemaSeguridad.shared.exception;
 import com.example.subsistemaSeguridad.shared.dto.ErrorResponse;
 import com.example.subsistemaSeguridad.usuario.exception.UsuarioDadoDeBajaException;
 import com.example.subsistemaSeguridad.usuario.exception.UsuarioNotFoundException;
+import com.example.subsistemaSeguridad.auth.exception.CredencialesInvalidasException;
 import com.example.subsistemaSeguridad.sistema.exception.SistemaNotFoundException;
 import com.example.subsistemaSeguridad.sistema.exception.SistemaDadoDeBajaException;
+import com.example.subsistemaSeguridad.sistema.exception.SistemaKeyNotFoundException;
 import com.example.subsistemaSeguridad.rol.exception.RolNotFoundException;
 import com.example.subsistemaSeguridad.rol.exception.RolDadoDeBajaException;
 import com.example.subsistemaSeguridad.permiso.exception.PermisoNotFoundException;
@@ -13,6 +15,9 @@ import com.example.subsistemaSeguridad.rolpermiso.exception.RolPermisoNotFoundEx
 import com.example.subsistemaSeguridad.rolpermiso.exception.RolPermisoDadoDeBajaException;
 import com.example.subsistemaSeguridad.usuariorol.exception.UsuarioRolNotFoundException;
 import com.example.subsistemaSeguridad.usuariorol.exception.UsuarioRolDadoDeBajaException;
+import com.example.subsistemaSeguridad.usuariosistema.exception.UsuarioSistemaDadoDeBajaException;
+import com.example.subsistemaSeguridad.usuariosistema.exception.UsuarioSistemaNotFoundException;
+import com.example.subsistemaSeguridad.usuariosistema.exception.UsuarioSistemaYaRegistradoException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -45,6 +50,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(SistemaDadoDeBajaException.class)
     public ResponseEntity<ErrorResponse> handleSistemaDadoDeBaja(SistemaDadoDeBajaException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(new ErrorResponse(ex.getMessage()));
+    }
+
+    @ExceptionHandler(SistemaKeyNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleSistemaKeyNotFound(SistemaKeyNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(new ErrorResponse(ex.getMessage()));
     }
 
@@ -93,6 +104,30 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(UsuarioRolDadoDeBajaException.class)
     public ResponseEntity<ErrorResponse> handleUsuarioRolDadoDeBaja(UsuarioRolDadoDeBajaException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(new ErrorResponse(ex.getMessage()));
+    }
+
+    @ExceptionHandler(UsuarioSistemaDadoDeBajaException.class)
+    public ResponseEntity<ErrorResponse> handleUsuarioSistemaDadoDeBaja(UsuarioSistemaDadoDeBajaException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(new ErrorResponse(ex.getMessage()));
+    }
+
+    @ExceptionHandler(UsuarioSistemaNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleUsuarioSistemaNotFound(UsuarioSistemaNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse(ex.getMessage()));
+    }
+
+    @ExceptionHandler(UsuarioSistemaYaRegistradoException.class)
+    public ResponseEntity<ErrorResponse> handleUsuarioSistemaYaRegistrado(UsuarioSistemaYaRegistradoException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(new ErrorResponse(ex.getMessage()));
+    }
+
+    @ExceptionHandler(CredencialesInvalidasException.class)
+    public ResponseEntity<ErrorResponse> handleCredencialesInvalidas(CredencialesInvalidasException ex) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .body(new ErrorResponse(ex.getMessage()));
     }
 

@@ -14,15 +14,15 @@ import java.util.List;
 @Service
 public class JwtService {
 
-    private static final String SECRET_KEY = "a8f7c2d9e1b4a6c3f9d0e7t2c5a1f8e8e6c9b3a7e0f2c8d1a2l1e6f3c7d4a2b8"; // dps la movemos a application.properties pero por ahora la dejamos acá para probar si funciona bien
-    private static final long EXPIRATION_MS = 1000 * 60 * 60; // 1 hora
+    private static final String SECRET_KEY = "a8f7c2d9e1b4a6c3f9d0e7t2c5a1f8e8e6c9b3a7e0f2c8d1a2l1e6f3c7d4a2b8";
+    private static final long EXPIRATION_MS = 1000 * 60 * 60;
 
     public String generarToken(UsuarioAutenticadoDTO usuario) {
         Date ahora = new Date();
         Date expiracion = new Date(ahora.getTime() + EXPIRATION_MS);
 
         return Jwts.builder()
-                .subject(usuario.usuarioId().toString())
+                .subject(usuario.subjectId().toString())
                 .claim("mail", usuario.mailUsuario())
                 .claim("roles", usuario.roles())
                 .claim("permisos", usuario.permisos())
@@ -40,7 +40,7 @@ public class JwtService {
                 .getPayload();
     }
 
-    public Long extraerUsuarioId(String token) {
+    public Long extraerSubjectId(String token) {
         return Long.valueOf(extraerClaims(token).getSubject());
     }
 

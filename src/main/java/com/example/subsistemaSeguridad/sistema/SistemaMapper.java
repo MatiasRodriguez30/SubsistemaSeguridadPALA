@@ -24,7 +24,6 @@ public class SistemaMapper {
     public Sistema toEntity(SistemaCreateDTO dto) {
         Sistema sistema = new Sistema();
         sistema.setNombreSistema(dto.nombreSistema());
-        sistema.setKeySistema(dto.keySistema());
         sistema.setFechaAltaSistema(Instant.now());
         
         Usuario usuario = usuarioRepository.findById(dto.usuarioId())

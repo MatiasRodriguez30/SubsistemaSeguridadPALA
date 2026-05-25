@@ -1,5 +1,8 @@
 package com.example.subsistemaSeguridad.usuario;
 
+import com.example.subsistemaSeguridad.usuario.dto.UsuarioUpdateDTO;
+import com.example.subsistemaSeguridad.usuario.exception.UsuarioDadoDeBajaException;
+import com.example.subsistemaSeguridad.usuariosistema.UsuarioSistema;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -10,11 +13,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.example.subsistemaSeguridad.sistema.Sistema;
-import com.example.subsistemaSeguridad.usuariorol.UsuarioRol;
-import com.example.subsistemaSeguridad.usuario.dto.UsuarioUpdateDTO;
-import com.example.subsistemaSeguridad.usuario.exception.UsuarioDadoDeBajaException;
-
 @Entity
 @Table(name = "usuarios")
 @Data
@@ -22,53 +20,46 @@ import com.example.subsistemaSeguridad.usuario.exception.UsuarioDadoDeBajaExcept
 @AllArgsConstructor
 @Builder
 public class Usuario {
-    
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    
+
     @Column(unique = true, nullable = false)
     private String mailUsuario;
-    
-    @Column(nullable = false)
+
+    @Column
     private String passwordUsuario;
-    
+
     @Column(nullable = false)
     private Instant fechaAltaUsuario;
-    
-    private Instant fechaBajaUsuario;
-    
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "sistema_id")
-    private Sistema sistema;
 
-    @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL)
-    private List<UsuarioRol> rolesUsuario = new ArrayList<>();
+    private Instant fechaBajaUsuario;
+
+    @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<UsuarioSistema> usuariosSistema = new ArrayList<>();
 
     public void actualizarDatos(UsuarioUpdateDTO dto) {
         if (dto.mailUsuario() != null) {
-            this.setMailUsuario(dto.mailUsuario());
+            setMailUsuario(dto.mailUsuario());
         }
-
-        // La contraseña se actualiza desde el service. (PasswordEncoder en UsuarioServiceImpl)
     }
 
     public boolean estaDadoDeBaja() {
-        return this.fechaBajaUsuario != null;
+        return fechaBajaUsuario != null;
     }
 
     public void darDeBaja() {
         if (estaDadoDeBaja()) {
-            throw new UsuarioDadoDeBajaException(this.id);
+            throw new UsuarioDadoDeBajaException(id);
         }
 
-        this.fechaBajaUsuario = Instant.now();
+        fechaBajaUsuario = Instant.now();
 
-        if (this.rolesUsuario != null) {
-            for (UsuarioRol ur : this.rolesUsuario) {
-                if (!ur.estaDadoDeBaja()) {
-                    ur.darDeBaja();
-                }
+        for (UsuarioSistema usuarioSistema : usuariosSistema) {
+            if (!usuarioSistema.estaDadoDeBaja()) {
+                usuarioSistema.darDeBaja();
             }
         }
     }
