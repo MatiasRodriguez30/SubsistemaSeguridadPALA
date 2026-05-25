@@ -31,7 +31,7 @@ public class UsuarioRolMapper {
 
         UsuarioRol usuarioRol = new UsuarioRol();
         usuarioRol.setRol(rol);
-        usuarioRol.setFechaAsignacionUsuarioRol(Instant.now());
+        usuarioRol.setFechaAsignacionUsuarioRol(null);
 
         return usuarioRol;
     }
@@ -42,7 +42,10 @@ public class UsuarioRolMapper {
                 entity.getContadorUsuarioRol(),
                 entity.getFechaAsignacionUsuarioRol(),
                 !entity.estaDadoDeBaja(),
-                entity.getUsuario() != null ? entity.getUsuario().getId() : null,
+                entity.getUsuarioSistema() != null ? entity.getUsuarioSistema().getId() : null,
+                entity.getUsuarioSistema() != null && entity.getUsuarioSistema().getUsuario() != null
+                        ? entity.getUsuarioSistema().getUsuario().getId()
+                        : null,
                 entity.getRol() != null ? entity.getRol().getId() : null
         );
     }

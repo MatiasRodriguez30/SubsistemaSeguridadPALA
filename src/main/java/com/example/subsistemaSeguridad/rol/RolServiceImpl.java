@@ -27,6 +27,12 @@ public class RolServiceImpl implements RolService {
     @Transactional
     public Rol createRol(RolCreateDTO dto) {
         final Rol rol = rolMapper.toEntity(dto);
+
+        if (rol.isEsPredeterminada()) {
+            rolRepository.findBySistemaIdAndEsPredeterminadaTrueAndFechaBajaRolIsNull(dto.sistemaId())
+                    .ifPresent(existing -> existing.setEsPredeterminada(false));
+        }
+
         return rolRepository.save(rol);
     }
 
@@ -48,6 +54,12 @@ public class RolServiceImpl implements RolService {
 
         if (rol.estaDadoDeBaja()) {
             throw new RolDadoDeBajaException(id);
+        }
+
+        if (Boolean.TRUE.equals(dto.esPredeterminada())) {
+            rolRepository.findBySistemaIdAndEsPredeterminadaTrueAndFechaBajaRolIsNull(rol.getSistema().getId())
+                    .filter(existing -> !existing.getId().equals(rol.getId()))
+                    .ifPresent(existing -> existing.setEsPredeterminada(false));
         }
 
         rol.actualizarDatos(dto);

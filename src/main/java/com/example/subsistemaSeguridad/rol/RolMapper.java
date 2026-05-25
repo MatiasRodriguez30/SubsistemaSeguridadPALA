@@ -25,17 +25,18 @@ public class RolMapper {
         Rol rol = new Rol();
         rol.setNombreRol(dto.nombreRol());
         rol.setDescripcionRol(dto.descripcionRol());
+        rol.setEsPredeterminada(Boolean.TRUE.equals(dto.esPredeterminada()));
         rol.setFechaAltaRol(Instant.now());
-        
+
         Sistema sistema = sistemaRepository.findById(dto.sistemaId())
                 .orElseThrow(() -> new SistemaNotFoundException(dto.sistemaId()));
-                
+
         if (sistema.estaDadoDeBaja()) {
             throw new SistemaDadoDeBajaException(sistema.getId());
         }
-        
+
         rol.setSistema(sistema);
-        
+
         return rol;
     }
 
@@ -44,6 +45,7 @@ public class RolMapper {
                 entity.getId(),
                 entity.getNombreRol(),
                 entity.getDescripcionRol(),
+                entity.isEsPredeterminada(),
                 entity.getFechaAltaRol(),
                 !entity.estaDadoDeBaja(),
                 entity.getSistema() != null ? entity.getSistema().getId() : null

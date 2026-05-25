@@ -9,5 +9,8 @@ import java.util.Optional;
 @Repository
 public interface RolRepository extends JpaRepository<Rol, Long> {
     List<Rol> findAllByFechaBajaRolIsNull();
+
     Optional<Rol> findByIdAndFechaBajaRolIsNull(Long id);
+
+    Optional<Rol> findBySistemaIdAndEsPredeterminadaTrueAndFechaBajaRolIsNull(Long sistemaId);
 }

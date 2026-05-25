@@ -1,8 +1,8 @@
 package com.example.subsistemaSeguridad.usuariorol;
 
 import com.example.subsistemaSeguridad.rol.Rol;
-import com.example.subsistemaSeguridad.usuario.Usuario;
 import com.example.subsistemaSeguridad.usuariorol.exception.UsuarioRolDadoDeBajaException;
+import com.example.subsistemaSeguridad.usuariosistema.UsuarioSistema;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -24,8 +24,8 @@ public class UsuarioRol {
     private int contadorUsuarioRol;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "usuario_id", nullable = false)
-    private Usuario usuario;
+    @JoinColumn(name = "usuario_sistema_id", nullable = false)
+    private UsuarioSistema usuarioSistema;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "rol_id", nullable = false)
@@ -36,13 +36,13 @@ public class UsuarioRol {
     private Instant fechaBajaRolUsuario;
 
     public boolean estaDadoDeBaja() {
-        return this.fechaBajaRolUsuario != null;
+        return fechaBajaRolUsuario != null;
     }
 
     public void darDeBaja() {
         if (estaDadoDeBaja()) {
-            throw new UsuarioRolDadoDeBajaException(this.id);
+            throw new UsuarioRolDadoDeBajaException(id);
         }
-        this.fechaBajaRolUsuario = Instant.now();
+        fechaBajaRolUsuario = Instant.now();
     }
 }

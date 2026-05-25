@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class SistemaServiceImpl implements SistemaService {
@@ -27,6 +28,7 @@ public class SistemaServiceImpl implements SistemaService {
     @Transactional
     public Sistema createSistema(SistemaCreateDTO dto) {
         final Sistema sistema = sistemaMapper.toEntity(dto);
+        sistema.asignarKeySistema(generarKeySistema(dto.nombreSistema()));
         return sistemaRepository.save(sistema);
     }
 
@@ -63,5 +65,24 @@ public class SistemaServiceImpl implements SistemaService {
 
         sistema.darDeBaja();
         sistemaRepository.save(sistema);
+    }
+
+    private String generarKeySistema(String nombreSistema) {
+        String baseKey = Sistema.normalizarBaseKey(nombreSistema);
+        
+        java.security.SecureRandom random = new java.security.SecureRandom();
+        byte[] bytes = new byte[16]; // 16 bytes = 128 bits of entropy
+        random.nextBytes(bytes);
+        
+        StringBuilder hexString = new StringBuilder();
+        for (byte b : bytes) {
+            String hex = Integer.toHexString(0xff & b);
+            if (hex.length() == 1) {
+                hexString.append('0');
+            }
+            hexString.append(hex);
+        }
+        
+        return baseKey + "_SYS_" + hexString.toString().toUpperCase();
     }
 }
