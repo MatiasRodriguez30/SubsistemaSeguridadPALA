@@ -2,8 +2,10 @@ package com.example.subsistemaSeguridad.usuario;
 
 import com.example.subsistemaSeguridad.usuario.dto.UsuarioCreateDTO;
 import com.example.subsistemaSeguridad.usuario.dto.UsuarioUpdateDTO;
+import com.example.subsistemaSeguridad.shared.EmailNormalizer;
 import com.example.subsistemaSeguridad.usuario.exception.UsuarioDadoDeBajaException;
 import com.example.subsistemaSeguridad.usuario.exception.UsuarioNotFoundException;
+import com.example.subsistemaSeguridad.usuario.exception.UsuarioYaRegistradoException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -33,6 +35,13 @@ public class UsuarioServiceImpl implements UsuarioService {
     @Override
     @Transactional
     public Usuario createUsuario(UsuarioCreateDTO dto) {
+        String normalizedMail = EmailNormalizer.normalize(dto.mailUsuario());
+
+        usuarioRepository.findByMailUsuarioAndFechaBajaUsuarioIsNull(normalizedMail)
+                .ifPresent(existing -> {
+                    throw new UsuarioYaRegistradoException(existing.getMailUsuario());
+                });
+
         final Usuario usuario = usuarioMapper.toEntity(dto);
 
         String passwordEncriptada = passwordEncoder.encode(dto.passwordUsuario());
@@ -62,7 +71,7 @@ public class UsuarioServiceImpl implements UsuarioService {
         }
 
         if (dto.mailUsuario() != null) {
-            usuario.setMailUsuario(dto.mailUsuario());
+            usuario.setMailUsuario(EmailNormalizer.normalize(dto.mailUsuario()));
         }
 
         if (dto.passwordUsuario() != null) {

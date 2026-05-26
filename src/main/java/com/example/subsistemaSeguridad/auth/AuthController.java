@@ -3,6 +3,7 @@ package com.example.subsistemaSeguridad.auth;
 import com.example.subsistemaSeguridad.auth.dto.ExternalRegisterRequestDTO;
 import com.example.subsistemaSeguridad.auth.dto.LoginRequestDTO;
 import com.example.subsistemaSeguridad.auth.dto.LoginResponseDTO;
+import com.example.subsistemaSeguridad.auth.dto.RegisterRequestDTO;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -20,6 +21,11 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<LoginResponseDTO> login(@RequestBody @Valid LoginRequestDTO request) {
         return ResponseEntity.ok(authService.login(request));
+    }
+
+    @PostMapping("/register")
+    public ResponseEntity<LoginResponseDTO> register(@RequestBody @Valid RegisterRequestDTO request) {
+        return ResponseEntity.ok(authService.register(request));
     }
 
     @PostMapping("/external/register")
