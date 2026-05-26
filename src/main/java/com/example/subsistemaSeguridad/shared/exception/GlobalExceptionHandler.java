@@ -1,9 +1,8 @@
 package com.example.subsistemaSeguridad.shared.exception;
 
 import com.example.subsistemaSeguridad.shared.dto.ErrorResponse;
-import com.example.subsistemaSeguridad.usuario.exception.UsuarioDadoDeBajaException;
-import com.example.subsistemaSeguridad.usuario.exception.UsuarioNotFoundException;
 import com.example.subsistemaSeguridad.auth.exception.CredencialesInvalidasException;
+import com.example.subsistemaSeguridad.auth.exception.TokenInvalidoException;
 import com.example.subsistemaSeguridad.sistema.exception.SistemaNotFoundException;
 import com.example.subsistemaSeguridad.sistema.exception.SistemaDadoDeBajaException;
 import com.example.subsistemaSeguridad.sistema.exception.SistemaKeyNotFoundException;
@@ -18,6 +17,9 @@ import com.example.subsistemaSeguridad.usuariorol.exception.UsuarioRolDadoDeBaja
 import com.example.subsistemaSeguridad.usuariosistema.exception.UsuarioSistemaDadoDeBajaException;
 import com.example.subsistemaSeguridad.usuariosistema.exception.UsuarioSistemaNotFoundException;
 import com.example.subsistemaSeguridad.usuariosistema.exception.UsuarioSistemaYaRegistradoException;
+import com.example.subsistemaSeguridad.usuario.exception.UsuarioDadoDeBajaException;
+import com.example.subsistemaSeguridad.usuario.exception.UsuarioNotFoundException;
+import com.example.subsistemaSeguridad.usuario.exception.UsuarioYaRegistradoException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -37,6 +39,12 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(UsuarioDadoDeBajaException.class)
     public ResponseEntity<ErrorResponse> handleDadoDeBaja(UsuarioDadoDeBajaException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(new ErrorResponse(ex.getMessage()));
+    }
+
+    @ExceptionHandler(UsuarioYaRegistradoException.class)
+    public ResponseEntity<ErrorResponse> handleUsuarioYaRegistrado(UsuarioYaRegistradoException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(new ErrorResponse(ex.getMessage()));
     }
@@ -127,6 +135,12 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(CredencialesInvalidasException.class)
     public ResponseEntity<ErrorResponse> handleCredencialesInvalidas(CredencialesInvalidasException ex) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(new ErrorResponse(ex.getMessage()));
+    }
+
+    @ExceptionHandler(TokenInvalidoException.class)
+    public ResponseEntity<ErrorResponse> handleTokenInvalido(TokenInvalidoException ex) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .body(new ErrorResponse(ex.getMessage()));
     }

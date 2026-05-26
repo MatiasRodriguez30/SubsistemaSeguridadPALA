@@ -4,6 +4,7 @@ import com.example.subsistemaSeguridad.auth.dto.UsuarioAutenticadoDTO;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
@@ -14,12 +15,20 @@ import java.util.List;
 @Service
 public class JwtService {
 
-    private static final String SECRET_KEY = "a8f7c2d9e1b4a6c3f9d0e7t2c5a1f8e8e6c9b3a7e0f2c8d1a2l1e6f3c7d4a2b8";
-    private static final long EXPIRATION_MS = 1000 * 60 * 60;
+    private final String secretKey;
+    private final long expirationMs;
+
+    public JwtService(
+            @Value("${security.jwt.secret}") String secretKey,
+            @Value("${security.jwt.expiration-ms}") long expirationMs
+    ) {
+        this.secretKey = secretKey;
+        this.expirationMs = expirationMs;
+    }
 
     public String generarToken(UsuarioAutenticadoDTO usuario) {
         Date ahora = new Date();
-        Date expiracion = new Date(ahora.getTime() + EXPIRATION_MS);
+        Date expiracion = new Date(ahora.getTime() + expirationMs);
 
         return Jwts.builder()
                 .subject(usuario.subjectId().toString())
@@ -68,7 +77,7 @@ public class JwtService {
     }
 
     private SecretKey getSigningKey() {
-        byte[] keyBytes = SECRET_KEY.getBytes(StandardCharsets.UTF_8);
+        byte[] keyBytes = secretKey.getBytes(StandardCharsets.UTF_8);
         return Keys.hmacShaKeyFor(keyBytes);
     }
 }

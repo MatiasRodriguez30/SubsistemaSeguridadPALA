@@ -3,16 +3,19 @@ package com.example.subsistemaSeguridad.auth;
 import com.example.subsistemaSeguridad.auth.dto.ExternalRegisterRequestDTO;
 import com.example.subsistemaSeguridad.auth.dto.LoginRequestDTO;
 import com.example.subsistemaSeguridad.auth.dto.LoginResponseDTO;
+import com.example.subsistemaSeguridad.auth.dto.RegisterRequestDTO;
 import com.example.subsistemaSeguridad.auth.dto.UsuarioAutenticadoDTO;
 import com.example.subsistemaSeguridad.auth.exception.CredencialesInvalidasException;
 import com.example.subsistemaSeguridad.rol.Rol;
 import com.example.subsistemaSeguridad.rol.RolRepository;
 import com.example.subsistemaSeguridad.rolpermiso.RolPermiso;
+import com.example.subsistemaSeguridad.shared.EmailNormalizer;
 import com.example.subsistemaSeguridad.sistema.Sistema;
 import com.example.subsistemaSeguridad.sistema.SistemaRepository;
 import com.example.subsistemaSeguridad.sistema.exception.SistemaKeyNotFoundException;
 import com.example.subsistemaSeguridad.usuario.Usuario;
 import com.example.subsistemaSeguridad.usuario.UsuarioRepository;
+import com.example.subsistemaSeguridad.usuario.exception.UsuarioYaRegistradoException;
 import com.example.subsistemaSeguridad.usuariorol.UsuarioRol;
 import com.example.subsistemaSeguridad.usuariosistema.UsuarioSistema;
 import com.example.subsistemaSeguridad.usuariosistema.UsuarioSistemaRepository;
@@ -53,8 +56,10 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public LoginResponseDTO login(LoginRequestDTO request) {
+        String normalizedMail = EmailNormalizer.normalize(request.mailUsuario());
+
         Usuario usuario = usuarioRepository
-                .findByMailUsuarioAndFechaBajaUsuarioIsNull(request.mailUsuario())
+                .findByMailUsuarioAndFechaBajaUsuarioIsNull(normalizedMail)
                 .orElseThrow(CredencialesInvalidasException::new);
 
         if (usuario.getPasswordUsuario() == null || !passwordEncoder.matches(
@@ -86,14 +91,54 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
+    public LoginResponseDTO register(RegisterRequestDTO request) {
+        String normalizedMail = EmailNormalizer.normalize(request.mailUsuario());
+
+        usuarioRepository.findByMailUsuarioAndFechaBajaUsuarioIsNull(normalizedMail)
+                .ifPresent(existing -> {
+                    throw new UsuarioYaRegistradoException(existing.getMailUsuario());
+                });
+
+        Usuario usuario = usuarioRepository.save(
+                Usuario.builder()
+                        .mailUsuario(normalizedMail)
+                        .passwordUsuario(passwordEncoder.encode(request.passwordUsuario()))
+                        .fechaAltaUsuario(Instant.now())
+                        .build()
+        );
+
+        UsuarioAutenticadoDTO usuarioAutenticado = new UsuarioAutenticadoDTO(
+                usuario.getId(),
+                usuario.getMailUsuario(),
+                List.of(),
+                List.of()
+        );
+
+        String token = jwtService.generarToken(usuarioAutenticado);
+
+        return new LoginResponseDTO(
+                token,
+                "Bearer",
+                usuario.getId(),
+                usuario.getMailUsuario(),
+                null,
+                List.of(),
+                List.of()
+        );
+    }
+
+    @Override
+    @Transactional
     public LoginResponseDTO registerExternal(String systemKey, ExternalRegisterRequestDTO request) {
+        String normalizedMail = EmailNormalizer.normalize(request.mailUsuario());
+
         Sistema sistema = sistemaRepository.findByKeySistemaAndFechaBajaSistemaIsNull(systemKey)
                 .orElseThrow(() -> new SistemaKeyNotFoundException(systemKey));
 
-        Usuario usuario = usuarioRepository.findByMailUsuarioAndFechaBajaUsuarioIsNull(request.mailUsuario())
+        Usuario usuario = usuarioRepository.findByMailUsuarioAndFechaBajaUsuarioIsNull(normalizedMail)
                 .orElseGet(() -> usuarioRepository.save(
                         Usuario.builder()
-                                .mailUsuario(request.mailUsuario())
+                                .mailUsuario(normalizedMail)
                                 .fechaAltaUsuario(Instant.now())
                                 .build()
                 ));
@@ -126,9 +171,11 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public LoginResponseDTO loginExternal(String systemKey, LoginRequestDTO request) {
+        String normalizedMail = EmailNormalizer.normalize(request.mailUsuario());
+
         UsuarioSistema usuarioSistema = usuarioSistemaRepository
                 .findByUsuarioMailUsuarioAndSistemaKeySistemaAndFechaBajaUsuarioSistemaIsNull(
-                        request.mailUsuario(),
+                        normalizedMail,
                         systemKey
                 )
                 .orElseThrow(CredencialesInvalidasException::new);

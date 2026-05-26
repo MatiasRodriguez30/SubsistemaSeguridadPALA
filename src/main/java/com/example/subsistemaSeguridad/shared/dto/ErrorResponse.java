@@ -1,4 +1,4 @@
 package com.example.subsistemaSeguridad.shared.dto;
 
-public record ErrorResponse(String mensaje) {
+public record ErrorResponse(String message) {
 }
