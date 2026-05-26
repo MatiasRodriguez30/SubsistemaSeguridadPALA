@@ -1,160 +1,249 @@
 # SEGURIDAD UTN - Backend (API REST)
 
-Este es el backend del Subsistema de Seguridad y Gestión de Accesos (proyecto PALA - Universidad Tecnológica Nacional). Proporciona una API REST completa y robusta para gestionar la autenticación de usuarios y la administración centralizada de múltiples sistemas y sus respectivos roles y permisos.
+Backend del Subsistema de Seguridad y Gestion de Accesos del proyecto PALA - Universidad Tecnologica Nacional. Centraliza autenticacion, registro, roles, permisos y administracion de multiples sistemas.
 
-## 🚀 Tecnologías Principales
+## Tecnologias principales
 
-*   **Lenguaje:** Java 17
-*   **Framework:** Spring Boot 3.3.0
-*   **Seguridad:** Spring Security + JWT (JSON Web Tokens via `jjwt`)
-*   **Persistencia:** Spring Data JPA / Hibernate
-*   **Base de Datos:** PostgreSQL (Producción) / H2 (Desarrollo y Testing)
-*   **Documentación API:** Swagger / OpenAPI 3 (`springdoc-openapi`)
-*   **Herramientas:** Lombok (para reducción de boilerplate), Gradle (Gestor de dependencias)
+- Java 17
+- Spring Boot 3.3.0
+- Spring Security + JWT
+- Spring Data JPA / Hibernate
+- PostgreSQL / H2
+- Swagger / OpenAPI 3
+- Gradle
 
-## 📦 Estructura de Entidades (Modelo de Dominio)
+## Modelo de dominio
 
-El sistema centraliza la gestión a través de las siguientes entidades principales:
-*   **Usuario:** La cuenta general de una persona (identificada por su email).
-*   **Sistema:** Las distintas aplicaciones o módulos que delegan su seguridad a este subsistema. Cada sistema posee una `keySistema` segura.
-*   **Rol:** Los distintos perfiles de acceso definidos **por sistema** (ej. "Administrador", "Visualizador").
-*   **UsuarioSistema:** La relación que indica que un usuario está habilitado para acceder a un sistema específico, con su propia contraseña local para dicho sistema si fuera necesario.
-*   **UsuarioRol:** La asignación de roles a un `UsuarioSistema`.
+- `Usuario`: cuenta general identificada por email.
+- `Sistema`: aplicacion externa o modulo que delega su seguridad a este subsistema.
+- `Rol`: perfil de acceso definido por sistema.
+- `UsuarioSistema`: relacion entre usuario y sistema.
+- `UsuarioRol`: roles asignados a un usuario dentro de un sistema.
 
-## ⚙️ Requisitos Previos
+## Requisitos previos
 
-*   Java Development Kit (JDK) 17 o superior.
-*   PostgreSQL (Opcional para entorno de desarrollo local si se utiliza H2 en memoria).
+- JDK 17 o superior.
+- PostgreSQL opcional para desarrollo local.
 
-## 🛠️ Instalación y Ejecución Local
+## Instalacion y ejecucion local
 
-Este proyecto utiliza el wrapper de Gradle (`gradlew`), por lo que no es necesario tener Gradle instalado globalmente en el sistema.
+1. Ubicarse en el directorio del backend:
 
-1.  **Clonar el repositorio y ubicarse en el directorio del backend:**
-    ```bash
-    cd subsistemaSeguridadBack
-    ```
+```bash
+cd subsistemaSeguridadBack
+```
 
-2.  **Construir el proyecto y descargar dependencias:**
-    En Linux / macOS:
-    ```bash
-    ./gradlew build
-    ```
-    En Windows:
-    ```bash
-    gradlew.bat build
-    ```
+2. Construir el proyecto:
 
-3.  **Ejecutar la aplicación (Development Server):**
-    En Linux / macOS:
-    ```bash
-    ./gradlew bootRun
-    ```
-    En Windows:
-    ```bash
-    gradlew.bat bootRun
-    ```
+```bash
+gradlew.bat build
+```
 
-    *Nota: Alternativamente, en Windows puedes utilizar el script proporcionado `./start-dev.ps1`.*
+3. Ejecutar la aplicacion:
 
-La aplicación iniciará por defecto en el puerto `8080`.
+```bash
+gradlew.bat bootRun
+```
 
-## 📚 Documentación de la API (Swagger UI)
+Alternativa en Windows:
 
-Una vez que el servidor backend esté en ejecución, puedes explorar y probar interactuar con los endpoints de la API REST a través de Swagger UI.
-Abre tu navegador web y visita:
+```powershell
+./start-dev.ps1
+```
 
-`http://localhost:8080/swagger-ui.html`
+La API inicia por defecto en `http://localhost:8080`.
 
-(La ruta de la documentación OpenAPI JSON se encuentra generalmente en `http://localhost:8080/v3/api-docs`).
+## Documentacion de la API
 
-## 🔐 Autenticación y Comunicación (JWT para Sistemas Externos)
+Con la aplicacion en ejecucion:
 
-Cuando un usuario externo (de un sistema asociado) se autentica exitosamente a través de la API, el subsistema de Seguridad UTN emitirá un **JSON Web Token (JWT)**. 
+- Swagger UI: `http://localhost:8080/swagger-ui.html`
+- OpenAPI JSON: `http://localhost:8080/v3/api-docs`
 
-### Estructura del Payload del JWT
-El token contendrá la información esencial del usuario, los roles y los permisos que tiene asignados dentro de ese sistema específico. El payload (decodificado) se verá de la siguiente forma:
+## Endpoints de autenticacion
+
+### Autenticacion interna del panel
+
+Estos endpoints no requieren `X-System-Key` y pueden ser consumidos directamente por el frontend administrativo.
+
+#### Registro
+
+```http
+POST /api/auth/register HTTP/1.1
+Host: localhost:8080
+Content-Type: application/json
+
+{
+  "mailUsuario": "admin@ejemplo.com",
+  "passwordUsuario": "123456"
+}
+```
+
+#### Login
+
+```http
+POST /api/auth/login HTTP/1.1
+Host: localhost:8080
+Content-Type: application/json
+
+{
+  "mailUsuario": "admin@ejemplo.com",
+  "passwordUsuario": "123456"
+}
+```
+
+### Integracion con sistemas externos
+
+Estos endpoints si requieren `X-System-Key`, porque identifican que sistema externo esta hablando con el subsistema.
+
+#### Registro externo
+
+```http
+POST /api/auth/external/register HTTP/1.1
+Host: localhost:8080
+X-System-Key: PALA_01X9
+Content-Type: application/json
+
+{
+  "mailUsuario": "user@mail.com",
+  "passwordUsuario": "123456"
+}
+```
+
+#### Login externo
+
+```http
+POST /api/auth/external/login HTTP/1.1
+Host: localhost:8080
+X-System-Key: PALA_01X9
+Content-Type: application/json
+
+{
+  "mailUsuario": "user@mail.com",
+  "passwordUsuario": "123456"
+}
+```
+
+## JWT y contexto del sistema
+
+Cuando el login o el registro finalizan correctamente, el backend devuelve un JWT. Ese token representa al usuario autenticado dentro de un sistema determinado.
+
+### Payload recomendado del JWT
+
+Para que el backend o un sistema consumidor puedan deducir el contexto sin reenviar `X-System-Key` en requests del navegador, conviene incluir datos del sistema dentro del token.
 
 ```json
 {
   "sub": "15",
   "mail": "usuario@ejemplo.com",
-  "roles": ["Administrador", "Auditor"],
-  "permisos": ["LEER_REPORTE", "EDITAR_USUARIO"],
+  "sistemaId": 1,
+  "sistema": "PALA",
+  "roles": ["Administrador"],
+  "permisos": ["LEER_REPORTE"],
   "iat": 1698765432,
   "exp": 1698851832
 }
 ```
 
-*   **`sub`**: El ID de la relación `usuarioSistemaId` (como String), que identifica unívocamente la cuenta de este usuario dentro del sistema específico.
-*   **`mail`**: El correo electrónico del usuario.
-*   **`roles`**: Arreglo con los nombres de los roles asignados a este usuario para el sistema.
-*   **`permisos`**: Arreglo con los permisos granulares asociados a los roles que posee el usuario.
-*   **`iat` / `exp`**: Fecha de emisión (Issued At) y expiración del token.
+Referencia de claims:
 
-### ¿Cómo comunicarse usando el JWT?
+- `sub`: identificador de la relacion del usuario dentro del sistema.
+- `mail`: email del usuario autenticado.
+- `sistemaId`: id interno del sistema.
+- `sistema`: codigo o nombre corto del sistema.
+- `roles`: roles asignados para ese sistema.
+- `permisos`: permisos efectivos del usuario.
 
-El sistema asociado o el cliente frontend deberá guardar este token y enviarlo en **todas** las peticiones HTTP subsiguientes hacia los recursos protegidos de su propia API (o del propio Subsistema de Seguridad).
+## Regla de uso de headers
 
-Se debe enviar mediante la cabecera (**Header**) HTTP `Authorization`, utilizando el esquema `Bearer`:
+- `X-System-Key`: solo para comunicacion backend externo -> Subsistema Seguridad.
+- `Authorization: Bearer <JWT>`: para frontend, navegador o cualquier cliente que ya opera con un token emitido.
+- No enviar `X-System-Key` en endpoints expuestos al navegador.
+
+## Que no debe pasar
+
+El navegador no debe ver nunca una cabecera como esta:
 
 ```http
-GET /api/recurso-protegido HTTP/1.1
-Host: api.tusistema.com
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOi...
+X-System-Key: PALA_01X9
 ```
 
-**Validación:** Los sistemas asociados deben validar la firma de este JWT utilizando la clave secreta compartida (o mediante un endpoint de validación del Subsistema de Seguridad UTN) para autorizar las operaciones del usuario según sus roles descritos en el token.
+Si esa key llega al frontend, cualquier usuario podria inspeccionar la request desde las herramientas del navegador y reutilizarla. Por eso la `X-System-Key` debe quedar siempre del lado servidor.
 
----
+## Flujo correcto de autenticacion externa
 
-## 💻 Ejemplo de Integración para Sistemas Externos
+### Paso 1 - El usuario inicia sesion en el frontend
 
-Para que un sistema externo (ej. "Portal de Alumnos" o "Sistema de Gestión") se comunique con el Subsistema de Seguridad UTN para autenticar o registrar a sus usuarios, debe utilizar su clave única (`keySistema`) enviándola a través de las cabeceras HTTP.
+El frontend envia solo las credenciales del usuario al backend del sistema externo:
 
-La idea central es que **cada sistema externo mantenga su `keySistema` como una variable de entorno oculta** (ej. `SYSTEM_KEY=PALA_01X9` en su archivo `.env`) y el usuario final nunca interactúe con ella ni la vea en el frontend. 
+```json
+{
+  "mail": "matias@mail.com",
+  "password": "123456"
+}
+```
 
-### Ventajas de usar la cabecera `X-System-Key`:
-*   **Independencia del Frontend:** El cliente web/móvil no conoce ni maneja la llave del sistema.
-*   **Separación de contexto:** No se mezclan datos personales del usuario (como email y contraseña) con credenciales de la aplicación.
-*   **Reutilización:** Se puede utilizar fácilmente en interceptores HTTP para login, registro, refresco de tokens, etc.
+### Paso 2 - El backend externo llama al Subsistema Seguridad
 
-### Flujo de peticiones (Ejemplos)
+El backend externo agrega la `X-System-Key` y traduce el payload al formato esperado por este servicio:
 
-El sistema externo interceptará el request de login de su frontend y hará la petición al Subsistema de Seguridad adjuntando la cabecera `X-System-Key`.
-
-#### 1. Registro de Usuario Externo
 ```http
-POST /api/auth/registro-externo HTTP/1.1
+POST /api/auth/external/login HTTP/1.1
 Host: localhost:8080
 X-System-Key: PALA_01X9
 Content-Type: application/json
 
 {
-  "mailUsuario": "user@mail.com",
+  "mailUsuario": "matias@mail.com",
   "passwordUsuario": "123456"
 }
 ```
 
-#### 2. Login Externo
-```http
-POST /api/auth/login-externo HTTP/1.1
-Host: localhost:8080
-X-System-Key: PALA_01X9
-Content-Type: application/json
+Este paso es seguro porque:
 
+- el usuario no ve la key;
+- el frontend no conoce la key;
+- solo el backend externo la maneja.
+
+### Paso 3 - El Subsistema Seguridad devuelve el JWT
+
+La respuesta incluye el token del usuario autenticado:
+
+```json
 {
-  "mailUsuario": "user@mail.com",
-  "passwordUsuario": "123456"
+  "token": "eyJhbGciOi..."
 }
 ```
 
-#### 3. Consultar perfil o permisos
+### Paso 4 - El frontend usa el JWT
+
+Desde ese momento el frontend trabaja solo con el token:
+
+```http
+Authorization: Bearer eyJhbGciOi...
+```
+
+No necesita reenviar `X-System-Key`, porque el JWT ya identifica:
+
+- quien es el usuario;
+- a que sistema pertenece;
+- que roles y permisos tiene.
+
+## Ejemplo correcto para endpoints consumidos por frontend
+
+Si el frontend consulta un endpoint protegido como perfil, sesion actual o permisos, debe enviar solo el JWT.
+
 ```http
 GET /api/auth/me HTTP/1.1
 Host: localhost:8080
-X-System-Key: PALA_01X9
-Authorization: Bearer <El_JWT_del_Usuario>
+Authorization: Bearer <JWT>
 ```
 
-Al recibir la cabecera `X-System-Key`, el Subsistema de Seguridad interpreta: *"Este usuario o solicitud pertenece al sistema identificado por PALA_01X9"*, creando y validando todos los datos dentro de ese contexto aislado.
+En ese caso, el backend deduce el sistema y los permisos a partir de los claims del token, sin exponer `X-System-Key` al navegador.
+
+## Ventajas de este enfoque
+
+- El frontend no conoce ni maneja la llave privada del sistema externo.
+- El contexto del sistema viaja dentro del JWT.
+- Se evita mezclar credenciales de aplicacion con credenciales del usuario final.
+- La integracion entre sistemas externos y subsistema queda mas coherente y segura.
