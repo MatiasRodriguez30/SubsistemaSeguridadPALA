@@ -11,5 +11,8 @@ public record ExternalRegisterRequestDTO(
 
         @NotBlank(message = "La contrasena es obligatoria")
         @Size(min = 6, message = "La contrasena debe tener al menos 6 caracteres")
-        String passwordUsuarioSistema
+        String passwordUsuarioSistema,
+
+        @NotBlank(message = "El rol solicitado es obligatorio")
+        String rolSolicitado
 ) {}

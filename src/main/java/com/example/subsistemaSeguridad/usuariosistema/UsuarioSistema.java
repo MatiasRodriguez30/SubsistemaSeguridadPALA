@@ -16,10 +16,7 @@ import java.util.List;
 import com.example.subsistemaSeguridad.usuariosistema.dto.UsuarioSistemaUpdateDTO;
 
 @Entity
-@Table(
-        name = "usuario_sistema",
-        uniqueConstraints = @UniqueConstraint(columnNames = {"usuario_id", "sistema_id"})
-)
+@Table(name = "usuario_sistema")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -76,5 +73,11 @@ public class UsuarioSistema {
                 usuarioRol.darDeBaja();
             }
         }
+    }
+
+    public void reactivar(String passwordUsuarioSistema) {
+        this.fechaBajaUsuarioSistema = null;
+        this.passwordUsuarioSistema = passwordUsuarioSistema;
+        this.fechaAltaUsuarioSistema = Instant.now();
     }
 }

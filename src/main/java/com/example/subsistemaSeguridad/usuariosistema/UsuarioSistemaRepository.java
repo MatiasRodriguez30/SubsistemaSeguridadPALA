@@ -10,6 +10,8 @@ import java.util.Optional;
 public interface UsuarioSistemaRepository extends JpaRepository<UsuarioSistema, Long> {
     Optional<UsuarioSistema> findByIdAndFechaBajaUsuarioSistemaIsNull(Long id);
 
+    Optional<UsuarioSistema> findByUsuarioIdAndSistemaId(Long usuarioId, Long sistemaId);
+
     Optional<UsuarioSistema> findByUsuarioIdAndSistemaIdAndFechaBajaUsuarioSistemaIsNull(Long usuarioId, Long sistemaId);
 
     Optional<UsuarioSistema> findByUsuarioMailUsuarioAndSistemaKeySistemaAndFechaBajaUsuarioSistemaIsNull(

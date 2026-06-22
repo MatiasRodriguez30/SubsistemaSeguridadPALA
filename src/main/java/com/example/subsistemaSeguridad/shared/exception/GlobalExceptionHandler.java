@@ -2,6 +2,7 @@ package com.example.subsistemaSeguridad.shared.exception;
 
 import com.example.subsistemaSeguridad.shared.dto.ErrorResponse;
 import com.example.subsistemaSeguridad.auth.exception.CredencialesInvalidasException;
+import com.example.subsistemaSeguridad.auth.exception.RolSolicitadoInvalidoException;
 import com.example.subsistemaSeguridad.auth.exception.TokenInvalidoException;
 import com.example.subsistemaSeguridad.sistema.exception.SistemaNotFoundException;
 import com.example.subsistemaSeguridad.sistema.exception.SistemaDadoDeBajaException;
@@ -136,6 +137,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(CredencialesInvalidasException.class)
     public ResponseEntity<ErrorResponse> handleCredencialesInvalidas(CredencialesInvalidasException ex) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(new ErrorResponse(ex.getMessage()));
+    }
+
+    @ExceptionHandler(RolSolicitadoInvalidoException.class)
+    public ResponseEntity<ErrorResponse> handleRolSolicitadoInvalido(RolSolicitadoInvalidoException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(new ErrorResponse(ex.getMessage()));
     }
 
