@@ -63,4 +63,8 @@ public class Usuario {
             }
         }
     }
+
+    public void reactivar() {
+        fechaBajaUsuario = null;
+    }
 }

@@ -6,6 +6,7 @@ import com.example.subsistemaSeguridad.auth.dto.LoginResponseDTO;
 import com.example.subsistemaSeguridad.auth.dto.RegisterRequestDTO;
 import com.example.subsistemaSeguridad.auth.dto.UsuarioAutenticadoDTO;
 import com.example.subsistemaSeguridad.auth.exception.CredencialesInvalidasException;
+import com.example.subsistemaSeguridad.auth.exception.RolSolicitadoInvalidoException;
 import com.example.subsistemaSeguridad.rol.Rol;
 import com.example.subsistemaSeguridad.rol.RolRepository;
 import com.example.subsistemaSeguridad.rolpermiso.RolPermiso;
@@ -131,38 +132,43 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     public LoginResponseDTO registerExternal(String systemKey, ExternalRegisterRequestDTO request) {
         String normalizedMail = EmailNormalizer.normalize(request.mailUsuario());
+        String encodedPassword = passwordEncoder.encode(request.passwordUsuarioSistema());
 
         Sistema sistema = sistemaRepository.findByKeySistemaAndFechaBajaSistemaIsNull(systemKey)
                 .orElseThrow(() -> new SistemaKeyNotFoundException(systemKey));
 
-        Usuario usuario = usuarioRepository.findByMailUsuarioAndFechaBajaUsuarioIsNull(normalizedMail)
-                .orElseGet(() -> usuarioRepository.save(
-                        Usuario.builder()
-                                .mailUsuario(normalizedMail)
-                                .fechaAltaUsuario(Instant.now())
-                                .build()
-                ));
+        Usuario usuario = usuarioRepository.findByMailUsuario(normalizedMail)
+                .map(existing -> {
+                    if (existing.estaDadoDeBaja()) {
+                        existing.reactivar();
+                    }
+                    return existing;
+                })
+                .orElseGet(() -> Usuario.builder()
+                        .mailUsuario(normalizedMail)
+                        .fechaAltaUsuario(Instant.now())
+                        .build());
 
-        if (usuario.estaDadoDeBaja()) {
-            throw new com.example.subsistemaSeguridad.usuario.exception.UsuarioDadoDeBajaException(usuario.getId());
+        usuario = usuarioRepository.save(usuario);
+
+        if (usuarioSistemaRepository
+                .findByUsuarioIdAndSistemaIdAndFechaBajaUsuarioSistemaIsNull(usuario.getId(), sistema.getId())
+                .isPresent()) {
+            throw new UsuarioSistemaYaRegistradoException(usuario.getId(), sistema.getId());
         }
 
-        usuarioSistemaRepository
-                .findByUsuarioIdAndSistemaIdAndFechaBajaUsuarioSistemaIsNull(usuario.getId(), sistema.getId())
-                .ifPresent(existing -> {
-                    throw new UsuarioSistemaYaRegistradoException(usuario.getId(), sistema.getId());
-                });
+        final Rol rolSolicitado = rolRepository
+                .findBySistemaIdAndNombreRolIgnoreCaseAndFechaBajaRolIsNull(sistema.getId(), request.rolSolicitado())
+                .orElseThrow(() -> new RolSolicitadoInvalidoException(request.rolSolicitado(), systemKey));
 
         UsuarioSistema usuarioSistema = UsuarioSistema.builder()
                 .usuario(usuario)
                 .sistema(sistema)
-                .passwordUsuarioSistema(passwordEncoder.encode(request.passwordUsuarioSistema()))
+                .passwordUsuarioSistema(encodedPassword)
                 .fechaAltaUsuarioSistema(Instant.now())
                 .build();
 
-        final UsuarioSistema usuarioSistemaParaRol = usuarioSistema;
-        rolRepository.findBySistemaIdAndEsPredeterminadaTrueAndFechaBajaRolIsNull(sistema.getId())
-                .ifPresent(rol -> asignarRolPredeterminado(usuarioSistemaParaRol, rol));
+        asignarRolSolicitado(usuarioSistema, rolSolicitado);
 
         usuarioSistema = usuarioSistemaRepository.save(usuarioSistema);
 
@@ -194,7 +200,7 @@ public class AuthServiceImpl implements AuthService {
         return buildExternalLoginResponse(usuarioSistema);
     }
 
-    private void asignarRolPredeterminado(UsuarioSistema usuarioSistema, Rol rol) {
+    private void asignarRolSolicitado(UsuarioSistema usuarioSistema, Rol rol) {
         int contador = usuarioSistema.getRolesUsuarioSistema() != null
                 ? usuarioSistema.getRolesUsuarioSistema().size() + 1
                 : 1;

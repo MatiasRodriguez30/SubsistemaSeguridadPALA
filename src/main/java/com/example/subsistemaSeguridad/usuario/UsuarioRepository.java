@@ -13,5 +13,7 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
 
     Optional<Usuario> findByIdAndFechaBajaUsuarioIsNull(Long id);
 
+    Optional<Usuario> findByMailUsuario(String mailUsuario);
+
     Optional<Usuario> findByMailUsuarioAndFechaBajaUsuarioIsNull(String mailUsuario);
 }
