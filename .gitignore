@@ -1,4 +1,6 @@
 HELP.md
+.env
+run-codex*.log
 .gradle
 build/
 !gradle/wrapper/gradle-wrapper.jar

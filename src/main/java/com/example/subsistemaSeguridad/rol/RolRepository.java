@@ -13,4 +13,6 @@ public interface RolRepository extends JpaRepository<Rol, Long> {
     Optional<Rol> findByIdAndFechaBajaRolIsNull(Long id);
 
     Optional<Rol> findBySistemaIdAndEsPredeterminadaTrueAndFechaBajaRolIsNull(Long sistemaId);
+
+    Optional<Rol> findBySistemaIdAndNombreRolIgnoreCaseAndFechaBajaRolIsNull(Long sistemaId, String nombreRol);
 }

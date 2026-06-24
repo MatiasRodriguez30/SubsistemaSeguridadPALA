@@ -16,10 +16,7 @@ import java.util.List;
 import com.example.subsistemaSeguridad.usuariosistema.dto.UsuarioSistemaUpdateDTO;
 
 @Entity
-@Table(
-        name = "usuario_sistema",
-        uniqueConstraints = @UniqueConstraint(columnNames = {"usuario_id", "sistema_id"})
-)
+@Table(name = "usuario_sistema")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -46,6 +43,12 @@ public class UsuarioSistema {
     @Column(nullable = false)
     private String passwordUsuarioSistema;
 
+    @Builder.Default
+    @Column(nullable = false)
+    private boolean correoVerificado = false;
+
+    private Instant fechaVerificacionCorreo;
+
     @OneToMany(mappedBy = "usuarioSistema", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<UsuarioRol> rolesUsuarioSistema = new ArrayList<>();
@@ -64,6 +67,11 @@ public class UsuarioSistema {
         this.passwordUsuarioSistema = passwordUsuarioSistema;
     }
 
+    public void verificarCorreo() {
+        this.correoVerificado = true;
+        this.fechaVerificacionCorreo = Instant.now();
+    }
+
     public void darDeBaja() {
         if (estaDadoDeBaja()) {
             return;
@@ -76,5 +84,13 @@ public class UsuarioSistema {
                 usuarioRol.darDeBaja();
             }
         }
+    }
+
+    public void reactivar(String passwordUsuarioSistema) {
+        this.fechaBajaUsuarioSistema = null;
+        this.passwordUsuarioSistema = passwordUsuarioSistema;
+        this.fechaAltaUsuarioSistema = Instant.now();
+        this.correoVerificado = false;
+        this.fechaVerificacionCorreo = null;
     }
 }

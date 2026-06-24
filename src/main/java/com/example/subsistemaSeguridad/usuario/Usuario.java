@@ -36,6 +36,12 @@ public class Usuario {
 
     private Instant fechaBajaUsuario;
 
+    @Builder.Default
+    @Column(nullable = false)
+    private boolean correoVerificado = false;
+
+    private Instant fechaVerificacionCorreo;
+
     @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<UsuarioSistema> usuariosSistema = new ArrayList<>();
@@ -62,5 +68,14 @@ public class Usuario {
                 usuarioSistema.darDeBaja();
             }
         }
+    }
+
+    public void reactivar() {
+        fechaBajaUsuario = null;
+    }
+
+    public void verificarCorreo() {
+        this.correoVerificado = true;
+        this.fechaVerificacionCorreo = Instant.now();
     }
 }
