@@ -2,6 +2,7 @@ package com.example.subsistemaSeguridad.mail;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.mail.MailException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -82,8 +83,8 @@ public class EmailServiceImpl implements EmailService {
             helper.setSubject(asunto);
             helper.setText(buildPlainText(descripcion, codigo), buildHtml(titulo, descripcion, codigo));
             mailSender.send(message);
-        } catch (MessagingException | UnsupportedEncodingException ex) {
-            throw new IllegalStateException("No se pudo preparar el correo de seguridad.", ex);
+        } catch (MessagingException | UnsupportedEncodingException | MailException ex) {
+            throw new MailDeliveryException("No se pudo enviar el correo de seguridad. Revisa la configuracion SMTP.", ex);
         }
     }
 
@@ -118,7 +119,10 @@ public class EmailServiceImpl implements EmailService {
 
     private void validarConfiguracion() {
         if (isBlank(username) || isBlank(password)) {
-            throw new IllegalStateException("MAIL_ENABLED=true requiere GMAIL_USERNAME y GMAIL_APP_PASSWORD.");
+            throw new MailDeliveryException(
+                    "MAIL_ENABLED=true requiere GMAIL_USERNAME y GMAIL_APP_PASSWORD.",
+                    null
+            );
         }
     }
 

@@ -7,6 +7,7 @@ import com.example.subsistemaSeguridad.auth.exception.RolSolicitadoInvalidoExcep
 import com.example.subsistemaSeguridad.auth.exception.TokenInvalidoException;
 import com.example.subsistemaSeguridad.codigoseguridad.exception.CodigoSeguridadExpiradoException;
 import com.example.subsistemaSeguridad.codigoseguridad.exception.CodigoSeguridadInvalidoException;
+import com.example.subsistemaSeguridad.mail.MailDeliveryException;
 import com.example.subsistemaSeguridad.sistema.exception.SistemaNotFoundException;
 import com.example.subsistemaSeguridad.sistema.exception.SistemaDadoDeBajaException;
 import com.example.subsistemaSeguridad.sistema.exception.SistemaKeyNotFoundException;
@@ -170,6 +171,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(CodigoSeguridadExpiradoException.class)
     public ResponseEntity<ErrorResponse> handleCodigoSeguridadExpirado(CodigoSeguridadExpiradoException ex) {
         return ResponseEntity.status(HttpStatus.GONE)
+                .body(new ErrorResponse(ex.getMessage()));
+    }
+
+    @ExceptionHandler(MailDeliveryException.class)
+    public ResponseEntity<ErrorResponse> handleMailDelivery(MailDeliveryException ex) {
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
                 .body(new ErrorResponse(ex.getMessage()));
     }
 
