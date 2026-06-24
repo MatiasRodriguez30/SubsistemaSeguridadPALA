@@ -1,249 +1,211 @@
-# SEGURIDAD UTN - Backend (API REST)
+# Subsistema de Seguridad PALA - Backend
 
-Backend del Subsistema de Seguridad y Gestion de Accesos del proyecto PALA - Universidad Tecnologica Nacional. Centraliza autenticacion, registro, roles, permisos y administracion de multiples sistemas.
+Backend del Subsistema de Seguridad del proyecto PALA. Centraliza autenticacion, registro, verificacion de correo, recuperacion de contrasena, sistemas, usuarios, roles, permisos y asignaciones de acceso.
 
-## Tecnologias principales
+La idea principal es que los sistemas consumidores no implementen su propia seguridad. En su lugar, registran usuarios, roles y permisos en este servicio, y luego autentican contra esta API mediante JWT.
+
+## Tecnologias
 
 - Java 17
-- Spring Boot 3.3.0
-- Spring Security + JWT
+- Spring Boot 3.3
+- Spring Security
+- JWT
 - Spring Data JPA / Hibernate
-- PostgreSQL / H2
-- Swagger / OpenAPI 3
+- H2 para desarrollo local
+- PostgreSQL para produccion, pensado para Supabase
+- JavaMailSender para envio SMTP
+- Swagger / OpenAPI
 - Gradle
 
-## Modelo de dominio
+## Composicion del dominio
 
-- `Usuario`: cuenta general identificada por email.
-- `Sistema`: aplicacion externa o modulo que delega su seguridad a este subsistema.
-- `Rol`: perfil de acceso definido por sistema.
-- `UsuarioSistema`: relacion entre usuario y sistema.
-- `UsuarioRol`: roles asignados a un usuario dentro de un sistema.
+- `Usuario`: identidad global del usuario, identificada por email.
+- `Sistema`: aplicacion cliente que delega su seguridad al subsistema.
+- `UsuarioSistema`: cuenta de un usuario dentro de un sistema especifico.
+- `Rol`: perfil de acceso perteneciente a un sistema.
+- `Permiso`: accion o capacidad asignable.
+- `UsuarioRol`: asignacion de roles a un usuario dentro de un sistema.
+- `RolPermiso`: asignacion de permisos a un rol.
+- `CodigoSeguridad`: codigos temporales para verificar correo y recuperar contrasena.
 
-## Requisitos previos
+Hay dos flujos de autenticacion:
 
-- JDK 17 o superior.
-- PostgreSQL opcional para desarrollo local.
+- Interno: usado por el panel administrativo del subsistema.
+- Externo: usado por otros sistemas, mediante `X-System-Key`.
 
-## Instalacion y ejecucion local
+## Flujo interno
 
-1. Ubicarse en el directorio del backend:
+El panel propio del subsistema usa endpoints sin `X-System-Key`.
 
-```bash
-cd subsistemaSeguridadBack
+1. `POST /api/auth/register` crea el usuario interno y envia un codigo por mail.
+2. `POST /api/auth/verify-email` valida el codigo y devuelve el JWT.
+3. `POST /api/auth/login` inicia sesion solo si el correo ya fue verificado.
+4. `POST /api/auth/password/forgot` envia codigo de recuperacion.
+5. `POST /api/auth/password/reset` valida codigo y cambia la contrasena.
+
+## Flujo externo
+
+Los sistemas externos se identifican con `X-System-Key`. Esa key nunca debe estar en un navegador: debe vivir solo en el backend del sistema consumidor.
+
+1. El backend externo llama a `POST /api/auth/external/register` con `X-System-Key`.
+2. Seguridad crea o reutiliza el `Usuario`, crea el `UsuarioSistema`, asigna el rol solicitado y envia codigo.
+3. El usuario verifica con `POST /api/auth/external/verify-email`.
+4. El login externo usa `POST /api/auth/external/login`.
+5. La recuperacion usa `/api/auth/external/password/forgot` y `/api/auth/external/password/reset`.
+
+## Mail
+
+El subsistema usa una cuenta emisora general. No se guarda una credencial Gmail por usuario, porque los usuarios finales no envian correo: el sistema envia correos transaccionales.
+
+Usos actuales:
+
+- Codigo de verificacion de correo.
+- Codigo para recuperar contrasena.
+
+La configuracion esta en `.env` local y en variables de entorno de Render. El archivo real `.env` no se versiona; usar `.env.example` como referencia.
+
+```properties
+MAIL_ENABLED=true
+GMAIL_USERNAME=authseguridad.p.a.l.a@gmail.com
+GMAIL_APP_PASSWORD=app_password_de_google
+MAIL_FROM=authseguridad.p.a.l.a@gmail.com
+MAIL_FROM_NAME=Subsistema Seguridad PALA
+MAIL_HOST=smtp.gmail.com
+MAIL_PORT=587
 ```
 
-2. Construir el proyecto:
+Para Gmail hay que activar verificacion en 2 pasos y generar una App Password. No se usa la contrasena normal de la cuenta.
 
-```bash
-gradlew.bat build
+Si `MAIL_ENABLED=false`, el backend no envia correo real y escribe el codigo en logs. Esto sirve para desarrollo local.
+
+## Variables de entorno
+
+Archivo local:
+
+```text
+.env
 ```
 
-3. Ejecutar la aplicacion:
+Plantilla versionable:
 
-```bash
-gradlew.bat bootRun
+```text
+.env.example
 ```
 
-Alternativa en Windows:
+Variables principales:
+
+```properties
+PORT=8080
+JWT_SECRET=poner_un_secreto_largo_de_32_caracteres_o_mas
+JWT_EXPIRATION_MS=3600000
+
+SPRING_DATASOURCE_URL=jdbc:postgresql://host:puerto/postgres?sslmode=require
+SPRING_DATASOURCE_DRIVER_CLASS_NAME=org.postgresql.Driver
+SPRING_DATASOURCE_USERNAME=usuario_supabase
+SPRING_DATASOURCE_PASSWORD=password_supabase
+SPRING_JPA_DATABASE_PLATFORM=org.hibernate.dialect.PostgreSQLDialect
+SPRING_JPA_HIBERNATE_DDL_AUTO=update
+SPRING_JPA_SHOW_SQL=false
+H2_CONSOLE_ENABLED=false
+```
+
+Localmente, si no se cargan variables de Supabase, la app usa H2 en memoria.
+
+## Supabase
+
+Para produccion con Supabase se usa PostgreSQL.
+
+En Supabase obtener:
+
+- Host
+- Puerto
+- Database
+- User
+- Password
+
+Luego formar una URL JDBC:
+
+```properties
+SPRING_DATASOURCE_URL=jdbc:postgresql://host:puerto/postgres?sslmode=require
+```
+
+En Render conviene cargar todas las variables desde el panel de Environment Variables, no desde un archivo commiteado.
+
+## Render
+
+Configuracion sugerida:
+
+- Build command: `./gradlew build`
+- Start command: `./gradlew bootRun`
+- Runtime: Java 17
+- Environment variables: las mismas de `.env.example`
+
+Render inyecta el puerto mediante `PORT`; `application.properties` ya usa:
+
+```properties
+server.port=${PORT:8080}
+```
+
+## Ejecucion local
 
 ```powershell
-./start-dev.ps1
+cd D:\PALASeminario\subsistemaSeguridadBack
+.\gradlew.bat bootRun
 ```
 
-La API inicia por defecto en `http://localhost:8080`.
+API local:
 
-## Documentacion de la API
-
-Con la aplicacion en ejecucion:
-
-- Swagger UI: `http://localhost:8080/swagger-ui.html`
-- OpenAPI JSON: `http://localhost:8080/v3/api-docs`
-
-## Endpoints de autenticacion
-
-### Autenticacion interna del panel
-
-Estos endpoints no requieren `X-System-Key` y pueden ser consumidos directamente por el frontend administrativo.
-
-#### Registro
-
-```http
-POST /api/auth/register HTTP/1.1
-Host: localhost:8080
-Content-Type: application/json
-
-{
-  "mailUsuario": "admin@ejemplo.com",
-  "passwordUsuario": "123456"
-}
+```text
+http://localhost:8080
 ```
 
-#### Login
+Swagger:
 
-```http
-POST /api/auth/login HTTP/1.1
-Host: localhost:8080
-Content-Type: application/json
-
-{
-  "mailUsuario": "admin@ejemplo.com",
-  "passwordUsuario": "123456"
-}
+```text
+http://localhost:8080/swagger-ui/index.html
 ```
 
-### Integracion con sistemas externos
+## Tests
 
-Estos endpoints si requieren `X-System-Key`, porque identifican que sistema externo esta hablando con el subsistema.
-
-#### Registro externo
-
-```http
-POST /api/auth/external/register HTTP/1.1
-Host: localhost:8080
-X-System-Key: PALA_01X9
-Content-Type: application/json
-
-{
-  "mailUsuario": "user@mail.com",
-  "passwordUsuario": "123456"
-}
+```powershell
+.\gradlew.bat test
 ```
 
-#### Login externo
+## Endpoints principales
 
-```http
-POST /api/auth/external/login HTTP/1.1
-Host: localhost:8080
-X-System-Key: PALA_01X9
-Content-Type: application/json
+Internos:
 
-{
-  "mailUsuario": "user@mail.com",
-  "passwordUsuario": "123456"
-}
-```
+- `POST /api/auth/register`
+- `POST /api/auth/verify-email`
+- `POST /api/auth/login`
+- `POST /api/auth/resend-verification`
+- `POST /api/auth/password/forgot`
+- `POST /api/auth/password/reset`
 
-## JWT y contexto del sistema
+Externos:
 
-Cuando el login o el registro finalizan correctamente, el backend devuelve un JWT. Ese token representa al usuario autenticado dentro de un sistema determinado.
+- `POST /api/auth/external/register`
+- `POST /api/auth/external/verify-email`
+- `POST /api/auth/external/login`
+- `POST /api/auth/external/resend-verification`
+- `POST /api/auth/external/password/forgot`
+- `POST /api/auth/external/password/reset`
 
-### Payload recomendado del JWT
+Administracion:
 
-Para que el backend o un sistema consumidor puedan deducir el contexto sin reenviar `X-System-Key` en requests del navegador, conviene incluir datos del sistema dentro del token.
+- `/api/usuarios`
+- `/api/sistemas`
+- `/api/usuario-sistemas`
+- `/api/roles`
+- `/api/permisos`
+- `/api/usuario-roles`
+- `/api/rol-permisos`
 
-```json
-{
-  "sub": "15",
-  "mail": "usuario@ejemplo.com",
-  "sistemaId": 1,
-  "sistema": "PALA",
-  "roles": ["Administrador"],
-  "permisos": ["LEER_REPORTE"],
-  "iat": 1698765432,
-  "exp": 1698851832
-}
-```
+## Seguridad
 
-Referencia de claims:
-
-- `sub`: identificador de la relacion del usuario dentro del sistema.
-- `mail`: email del usuario autenticado.
-- `sistemaId`: id interno del sistema.
-- `sistema`: codigo o nombre corto del sistema.
-- `roles`: roles asignados para ese sistema.
-- `permisos`: permisos efectivos del usuario.
-
-## Regla de uso de headers
-
-- `X-System-Key`: solo para comunicacion backend externo -> Subsistema Seguridad.
-- `Authorization: Bearer <JWT>`: para frontend, navegador o cualquier cliente que ya opera con un token emitido.
-- No enviar `X-System-Key` en endpoints expuestos al navegador.
-
-## Que no debe pasar
-
-El navegador no debe ver nunca una cabecera como esta:
-
-```http
-X-System-Key: PALA_01X9
-```
-
-Si esa key llega al frontend, cualquier usuario podria inspeccionar la request desde las herramientas del navegador y reutilizarla. Por eso la `X-System-Key` debe quedar siempre del lado servidor.
-
-## Flujo correcto de autenticacion externa
-
-### Paso 1 - El usuario inicia sesion en el frontend
-
-El frontend envia solo las credenciales del usuario al backend del sistema externo:
-
-```json
-{
-  "mail": "matias@mail.com",
-  "password": "123456"
-}
-```
-
-### Paso 2 - El backend externo llama al Subsistema Seguridad
-
-El backend externo agrega la `X-System-Key` y traduce el payload al formato esperado por este servicio:
-
-```http
-POST /api/auth/external/login HTTP/1.1
-Host: localhost:8080
-X-System-Key: PALA_01X9
-Content-Type: application/json
-
-{
-  "mailUsuario": "matias@mail.com",
-  "passwordUsuario": "123456"
-}
-```
-
-Este paso es seguro porque:
-
-- el usuario no ve la key;
-- el frontend no conoce la key;
-- solo el backend externo la maneja.
-
-### Paso 3 - El Subsistema Seguridad devuelve el JWT
-
-La respuesta incluye el token del usuario autenticado:
-
-```json
-{
-  "token": "eyJhbGciOi..."
-}
-```
-
-### Paso 4 - El frontend usa el JWT
-
-Desde ese momento el frontend trabaja solo con el token:
-
-```http
-Authorization: Bearer eyJhbGciOi...
-```
-
-No necesita reenviar `X-System-Key`, porque el JWT ya identifica:
-
-- quien es el usuario;
-- a que sistema pertenece;
-- que roles y permisos tiene.
-
-## Ejemplo correcto para endpoints consumidos por frontend
-
-Si el frontend consulta un endpoint protegido como perfil, sesion actual o permisos, debe enviar solo el JWT.
-
-```http
-GET /api/auth/me HTTP/1.1
-Host: localhost:8080
-Authorization: Bearer <JWT>
-```
-
-En ese caso, el backend deduce el sistema y los permisos a partir de los claims del token, sin exponer `X-System-Key` al navegador.
-
-## Ventajas de este enfoque
-
-- El frontend no conoce ni maneja la llave privada del sistema externo.
-- El contexto del sistema viaja dentro del JWT.
-- Se evita mezclar credenciales de aplicacion con credenciales del usuario final.
-- La integracion entre sistemas externos y subsistema queda mas coherente y segura.
+- Las contrasenas se guardan hasheadas con BCrypt.
+- Los codigos de verificacion se guardan hasheados.
+- Los codigos expiran y tienen limite de intentos.
+- Los JWT incluyen mail, roles y permisos.
+- `X-System-Key` no debe enviarse desde el frontend.
+- `.env` esta ignorado para evitar subir secretos.
