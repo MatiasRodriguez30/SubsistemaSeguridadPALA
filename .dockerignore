@@ -1,0 +1,10 @@
+.git
+.gradle
+.idea
+build
+run-codex*.log
+.env
+.env.*
+*.iml
+out
+.vscode
