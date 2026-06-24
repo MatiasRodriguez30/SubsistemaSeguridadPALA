@@ -176,8 +176,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MailDeliveryException.class)
     public ResponseEntity<ErrorResponse> handleMailDelivery(MailDeliveryException ex) {
+        String message = ex.getDetail() == null
+                ? ex.getMessage()
+                : ex.getMessage() + " Detalle: " + ex.getDetail();
         return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
-                .body(new ErrorResponse(ex.getMessage()));
+                .body(new ErrorResponse(message));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

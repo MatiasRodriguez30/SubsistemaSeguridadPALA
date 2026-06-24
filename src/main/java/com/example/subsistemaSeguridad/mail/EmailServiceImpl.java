@@ -84,6 +84,7 @@ public class EmailServiceImpl implements EmailService {
             helper.setText(buildPlainText(descripcion, codigo), buildHtml(titulo, descripcion, codigo));
             mailSender.send(message);
         } catch (MessagingException | UnsupportedEncodingException | MailException ex) {
+            logger.error("Error enviando correo de seguridad a {}", destinatario, ex);
             throw new MailDeliveryException("No se pudo enviar el correo de seguridad. Revisa la configuracion SMTP.", ex);
         }
     }
