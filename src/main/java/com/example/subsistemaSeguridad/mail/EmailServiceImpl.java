@@ -1,5 +1,7 @@
 package com.example.subsistemaSeguridad.mail;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.mail.MailException;
@@ -12,7 +14,15 @@ import jakarta.mail.MessagingException;
 import jakarta.mail.internet.AddressException;
 import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
+import java.util.List;
+import java.util.Map;
 
 @Service
 public class EmailServiceImpl implements EmailService {
@@ -20,28 +30,47 @@ public class EmailServiceImpl implements EmailService {
     private static final Logger logger = LoggerFactory.getLogger(EmailServiceImpl.class);
 
     private final JavaMailSender mailSender;
+    private final ObjectMapper objectMapper;
+    private final HttpClient httpClient;
     private final boolean mailEnabled;
+    private final String mailProvider;
     private final String username;
     private final String password;
     private final String from;
     private final String fromName;
+    private final String resendApiKey;
+    private final String resendApiUrl;
+    private final String resendFrom;
     private final long expirationMinutes;
 
     public EmailServiceImpl(
             JavaMailSender mailSender,
+            ObjectMapper objectMapper,
             @Value("${app.mail.enabled:false}") boolean mailEnabled,
+            @Value("${app.mail.provider:smtp}") String mailProvider,
             @Value("${spring.mail.username:}") String username,
             @Value("${spring.mail.password:}") String password,
             @Value("${app.mail.from:}") String from,
             @Value("${app.mail.from-name:Subsistema Seguridad PALA}") String fromName,
+            @Value("${app.mail.resend.api-key:}") String resendApiKey,
+            @Value("${app.mail.resend.api-url:https://api.resend.com/emails}") String resendApiUrl,
+            @Value("${app.mail.resend.from:}") String resendFrom,
             @Value("${app.security.verification.expiration-minutes:15}") long expirationMinutes
     ) {
         this.mailSender = mailSender;
+        this.objectMapper = objectMapper;
+        this.httpClient = HttpClient.newBuilder()
+                .connectTimeout(Duration.ofSeconds(10))
+                .build();
         this.mailEnabled = mailEnabled;
+        this.mailProvider = mailProvider;
         this.username = username;
         this.password = password;
         this.from = from;
         this.fromName = fromName;
+        this.resendApiKey = resendApiKey;
+        this.resendApiUrl = resendApiUrl;
+        this.resendFrom = resendFrom;
         this.expirationMinutes = expirationMinutes;
     }
 
@@ -75,6 +104,15 @@ public class EmailServiceImpl implements EmailService {
 
         validarConfiguracion();
 
+        if ("resend".equalsIgnoreCase(mailProvider)) {
+            enviarPorResend(destinatario, asunto, titulo, descripcion, codigo);
+            return;
+        }
+
+        enviarPorSmtp(destinatario, asunto, titulo, descripcion, codigo);
+    }
+
+    private void enviarPorSmtp(String destinatario, String asunto, String titulo, String descripcion, String codigo) {
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
@@ -89,9 +127,57 @@ public class EmailServiceImpl implements EmailService {
         }
     }
 
+    private void enviarPorResend(String destinatario, String asunto, String titulo, String descripcion, String codigo) {
+        try {
+            Map<String, Object> payload = Map.of(
+                    "from", resolveResendFrom(),
+                    "to", List.of(destinatario),
+                    "subject", asunto,
+                    "html", buildHtml(titulo, descripcion, codigo),
+                    "text", buildPlainText(descripcion, codigo)
+            );
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(resendApiUrl))
+                    .timeout(Duration.ofSeconds(15))
+                    .header("Authorization", "Bearer " + resendApiKey)
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(payload)))
+                    .build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                throw new MailDeliveryException(
+                        "No se pudo enviar el correo de seguridad por Resend. Estado "
+                                + response.statusCode() + ": " + response.body(),
+                        null
+                );
+            }
+        } catch (JsonProcessingException ex) {
+            throw new MailDeliveryException("No se pudo preparar el correo de seguridad para Resend.", ex);
+        } catch (IOException ex) {
+            throw new MailDeliveryException("No se pudo enviar el correo de seguridad por Resend.", ex);
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            throw new MailDeliveryException("No se pudo enviar el correo de seguridad por Resend.", ex);
+        }
+    }
+
     private InternetAddress resolveFrom() throws AddressException, UnsupportedEncodingException {
         String address = isBlank(from) ? username : from;
         return isBlank(fromName) ? new InternetAddress(address) : new InternetAddress(address, fromName);
+    }
+
+    private String resolveResendFrom() {
+        if (!isBlank(resendFrom)) {
+            return resendFrom;
+        }
+
+        String address = isBlank(from) ? username : from;
+        if (isBlank(address)) {
+            return "";
+        }
+        return isBlank(fromName) ? address : fromName + " <" + address + ">";
     }
 
     private String buildPlainText(String descripcion, String codigo) {
@@ -119,6 +205,16 @@ public class EmailServiceImpl implements EmailService {
     }
 
     private void validarConfiguracion() {
+        if ("resend".equalsIgnoreCase(mailProvider)) {
+            if (isBlank(resendApiKey)) {
+                throw new MailDeliveryException("MAIL_PROVIDER=resend requiere RESEND_API_KEY.", null);
+            }
+            if (isBlank(resolveResendFrom())) {
+                throw new MailDeliveryException("MAIL_PROVIDER=resend requiere RESEND_FROM o MAIL_FROM.", null);
+            }
+            return;
+        }
+
         if (isBlank(username) || isBlank(password)) {
             throw new MailDeliveryException(
                     "MAIL_ENABLED=true requiere GMAIL_USERNAME y GMAIL_APP_PASSWORD.",
