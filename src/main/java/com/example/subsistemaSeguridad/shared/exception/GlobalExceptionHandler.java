@@ -1,9 +1,12 @@
 package com.example.subsistemaSeguridad.shared.exception;
 
+import com.example.subsistemaSeguridad.auth.exception.CorreoNoVerificadoException;
 import com.example.subsistemaSeguridad.shared.dto.ErrorResponse;
 import com.example.subsistemaSeguridad.auth.exception.CredencialesInvalidasException;
 import com.example.subsistemaSeguridad.auth.exception.RolSolicitadoInvalidoException;
 import com.example.subsistemaSeguridad.auth.exception.TokenInvalidoException;
+import com.example.subsistemaSeguridad.codigoseguridad.exception.CodigoSeguridadExpiradoException;
+import com.example.subsistemaSeguridad.codigoseguridad.exception.CodigoSeguridadInvalidoException;
 import com.example.subsistemaSeguridad.sistema.exception.SistemaNotFoundException;
 import com.example.subsistemaSeguridad.sistema.exception.SistemaDadoDeBajaException;
 import com.example.subsistemaSeguridad.sistema.exception.SistemaKeyNotFoundException;
@@ -140,6 +143,12 @@ public class GlobalExceptionHandler {
                 .body(new ErrorResponse(ex.getMessage()));
     }
 
+    @ExceptionHandler(CorreoNoVerificadoException.class)
+    public ResponseEntity<ErrorResponse> handleCorreoNoVerificado(CorreoNoVerificadoException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(new ErrorResponse(ex.getMessage()));
+    }
+
     @ExceptionHandler(RolSolicitadoInvalidoException.class)
     public ResponseEntity<ErrorResponse> handleRolSolicitadoInvalido(RolSolicitadoInvalidoException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT)
@@ -149,6 +158,18 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(TokenInvalidoException.class)
     public ResponseEntity<ErrorResponse> handleTokenInvalido(TokenInvalidoException ex) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(new ErrorResponse(ex.getMessage()));
+    }
+
+    @ExceptionHandler(CodigoSeguridadInvalidoException.class)
+    public ResponseEntity<ErrorResponse> handleCodigoSeguridadInvalido(CodigoSeguridadInvalidoException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorResponse(ex.getMessage()));
+    }
+
+    @ExceptionHandler(CodigoSeguridadExpiradoException.class)
+    public ResponseEntity<ErrorResponse> handleCodigoSeguridadExpirado(CodigoSeguridadExpiradoException ex) {
+        return ResponseEntity.status(HttpStatus.GONE)
                 .body(new ErrorResponse(ex.getMessage()));
     }
 

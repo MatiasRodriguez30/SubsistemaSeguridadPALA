@@ -43,6 +43,12 @@ public class UsuarioSistema {
     @Column(nullable = false)
     private String passwordUsuarioSistema;
 
+    @Builder.Default
+    @Column(nullable = false)
+    private boolean correoVerificado = false;
+
+    private Instant fechaVerificacionCorreo;
+
     @OneToMany(mappedBy = "usuarioSistema", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<UsuarioRol> rolesUsuarioSistema = new ArrayList<>();
@@ -59,6 +65,11 @@ public class UsuarioSistema {
 
     public void actualizarPasswordUsuarioSistema(String passwordUsuarioSistema) {
         this.passwordUsuarioSistema = passwordUsuarioSistema;
+    }
+
+    public void verificarCorreo() {
+        this.correoVerificado = true;
+        this.fechaVerificacionCorreo = Instant.now();
     }
 
     public void darDeBaja() {
@@ -79,5 +90,7 @@ public class UsuarioSistema {
         this.fechaBajaUsuarioSistema = null;
         this.passwordUsuarioSistema = passwordUsuarioSistema;
         this.fechaAltaUsuarioSistema = Instant.now();
+        this.correoVerificado = false;
+        this.fechaVerificacionCorreo = null;
     }
 }
