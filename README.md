@@ -1,9 +1,80 @@
 # Subsistema de Seguridad PALA - Backend
 
-Backend del Subsistema de Seguridad del proyecto PALA. Centraliza autenticacion, registro, verificacion de correo, recuperacion de contrasena, sistemas, usuarios, roles, permisos y asignaciones de acceso.
+Este backend es un servicio centralizado de Gestión de Identidad y Accesos (IAM). Se encarga de manejar toda la seguridad, autenticación y autorización para múltiples sistemas o aplicaciones.
 
-La idea principal es que los sistemas consumidores no implementen su propia seguridad. En su lugar, registran usuarios, roles y permisos en este servicio, y luego autentican contra esta API mediante JWT.
+**¿De qué se trata y cómo funciona?**
+La idea principal es que los sistemas consumidores (por ejemplo, una tienda online, un panel de control, etc.) **no implementen su propia seguridad ni gestionen contraseñas**. En su lugar, delegan esta responsabilidad a este Subsistema de Seguridad de la siguiente manera:
+1. El sistema consumidor usa esta API para registrar a sus usuarios.
+2. Esta API guarda al usuario, verifica su correo, y gestiona contraseñas (incluyendo recuperación).
+3. Cuando un usuario intenta iniciar sesión en el sistema consumidor, dicho sistema envía las credenciales a esta API.
+4. Si las credenciales son válidas, la API devuelve un token JWT con la información del usuario, incluyendo sus roles y permisos asignados para ese sistema en particular.
 
+## Ejemplo de lo que devuelve (Respuesta exitosa)
+
+Cuando el inicio de sesión es exitoso, la API devuelve un JSON que contiene el JWT (`token`), así como una lista de roles y permisos del usuario en el sistema que hizo la petición.
+
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWI...",
+  "tipo": "Bearer",
+  "usuarioId": 12,
+  "mailUsuario": "usuario@ejemplo.com",
+  "systemKey": "123e4567-e89b-12d3-a456-426614174000",
+  "roles": [
+    "ADMINISTRADOR"
+  ],
+  "permisos": [
+    "CREAR_PRODUCTO",
+    "ELIMINAR_USUARIO"
+  ]
+}
+```
+
+## Cómo conectarse (Para Sistemas Externos)
+
+Para que un sistema consumidor pueda conectarse a este backend de seguridad, debe estar registrado en la base de datos de sistemas y obtener un **`X-System-Key`** (una clave UUID única). 
+
+⚠️ **Importante**: Esta clave nunca debe enviarse desde el frontend (navegador web o app móvil) por motivos de seguridad. Debe configurarse como una variable de entorno en el backend del sistema consumidor, y es este backend quien se comunica con la API de seguridad.
+
+### Ejemplo de conexión (Node.js / Express)
+
+En el siguiente ejemplo, un sistema externo implementa su propio endpoint de `/login` para sus usuarios. Internamente, consume el endpoint de este backend de seguridad (`/api/auth/external/login`) adjuntando el `X-System-Key`.
+
+```javascript
+// Endpoint en el backend del sistema consumidor
+app.post('/login', async (req, res) => {
+    const { email, password } = req.body;
+
+    try {
+        // Hacemos la petición al Subsistema de Seguridad
+        const respuesta = await fetch('http://localhost:8080/api/auth/external/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                // Identificamos el sistema enviando la clave secreta
+                'X-System-Key': process.env.MI_SISTEMA_KEY 
+            },
+            body: JSON.stringify({ email, password })
+        });
+
+        const data = await respuesta.json();
+
+        if (respuesta.ok) {
+            // Usuario validado: Enviamos el token al frontend
+            res.json({ 
+                mensaje: "Login exitoso", 
+                token: data.token,
+                roles: data.roles
+            });
+        } else {
+            // Credenciales incorrectas o usuario no verificado
+            res.status(401).json({ error: data.message });
+        }
+    } catch (error) {
+        res.status(500).json({ error: "Error conectando al sistema de seguridad" });
+    }
+});
+```
 ## Tecnologias
 
 - Java 17
