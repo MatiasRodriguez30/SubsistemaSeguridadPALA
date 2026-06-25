@@ -126,28 +126,24 @@ Los sistemas externos se identifican con `X-System-Key`. Esa key nunca debe esta
 
 ## Mail
 
-El subsistema usa una cuenta emisora general. No se guarda una credencial Gmail por usuario, porque los usuarios finales no envian correo: el sistema envia correos transaccionales.
+El subsistema utiliza **Resend** para el envío de correos transaccionales. No se guardan credenciales de correo por usuario, ya que es el propio sistema quien emite los mensajes.
 
 Usos actuales:
 
-- Codigo de verificacion de correo.
-- Codigo para recuperar contrasena.
+- Código de verificación de correo.
+- Código para recuperar contraseña.
 
-La configuracion esta en `.env` local y en variables de entorno de Render. El archivo real `.env` no se versiona; usar `.env.example` como referencia.
+La configuración está en el archivo `.env` local y en las variables de entorno de Render. El archivo real `.env` no se versiona; usar `.env.example` como referencia.
 
 ```properties
 MAIL_ENABLED=true
-GMAIL_USERNAME=authseguridad.p.a.l.a@gmail.com
-GMAIL_APP_PASSWORD=app_password_de_google
-MAIL_FROM=authseguridad.p.a.l.a@gmail.com
-MAIL_FROM_NAME=Subsistema Seguridad PALA
-MAIL_HOST=smtp.gmail.com
-MAIL_PORT=587
+MAIL_PROVIDER=resend
+RESEND_API_KEY=re_xxxxxxxxx
+RESEND_FROM=Subsistema Seguridad PALA <onboarding@resend.dev>
+RESEND_API_URL=https://api.resend.com/emails
 ```
 
-Para Gmail hay que activar verificacion en 2 pasos y generar una App Password. No se usa la contrasena normal de la cuenta.
-
-Si `MAIL_ENABLED=false`, el backend no envia correo real y escribe el codigo en logs. Esto sirve para desarrollo local.
+Si `MAIL_ENABLED=false`, el backend no envía correo real y escribe el código en la consola (logs). Esto es útil para desarrollo local.
 
 ## Variables de entorno
 
