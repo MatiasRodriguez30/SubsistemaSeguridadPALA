@@ -8,6 +8,7 @@ import org.springframework.mail.MailException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import jakarta.mail.MessagingException;
@@ -75,6 +76,7 @@ public class EmailServiceImpl implements EmailService {
     }
 
     @Override
+    @Async("mailTaskExecutor")
     public void enviarCodigoVerificacion(String destinatario, String codigo) {
         enviarCodigo(
                 destinatario,
@@ -86,6 +88,7 @@ public class EmailServiceImpl implements EmailService {
     }
 
     @Override
+    @Async("mailTaskExecutor")
     public void enviarCodigoRecuperacionPassword(String destinatario, String codigo) {
         enviarCodigo(
                 destinatario,
