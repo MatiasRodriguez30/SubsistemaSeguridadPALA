@@ -10,7 +10,11 @@ import java.util.Optional;
 public interface SistemaRepository extends JpaRepository<Sistema, Long> {
     List<Sistema> findAllByFechaBajaSistemaIsNull();
 
+    List<Sistema> findAllByUsuarioIdAndFechaBajaSistemaIsNull(Long usuarioId);
+
     Optional<Sistema> findByIdAndFechaBajaSistemaIsNull(Long id);
+
+    Optional<Sistema> findByIdAndUsuarioIdAndFechaBajaSistemaIsNull(Long id, Long usuarioId);
 
     Optional<Sistema> findByKeySistemaAndFechaBajaSistemaIsNull(String keySistema);
 }

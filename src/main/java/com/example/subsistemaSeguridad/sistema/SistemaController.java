@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -32,15 +33,26 @@ public class SistemaController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<SistemaResponseDTO> getSistemaById(@PathVariable Long id) {
-        return sistemaService.getSistemaById(id)
+    public ResponseEntity<SistemaResponseDTO> getSistemaById(
+            @PathVariable Long id,
+            Authentication authentication
+    ) {
+        if (authentication == null || authentication.getName() == null || authentication.getName().isBlank()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        return sistemaService.getSistemaVisibleParaUsuario(id, authentication.getName())
                 .map(sistema -> ResponseEntity.ok(sistemaMapper.toResponseDTO(sistema)))
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping
-    public ResponseEntity<List<SistemaResponseDTO>> getAllSistemas() {
-        List<SistemaResponseDTO> sistemas = sistemaService.getAllSistemas().stream()
+    public ResponseEntity<List<SistemaResponseDTO>> getAllSistemas(Authentication authentication) {
+        if (authentication == null || authentication.getName() == null || authentication.getName().isBlank()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        List<SistemaResponseDTO> sistemas = sistemaService.getSistemasVisiblesParaUsuario(authentication.getName()).stream()
                 .map(sistemaMapper::toResponseDTO)
                 .collect(Collectors.toList());
         return ResponseEntity.ok(sistemas);

@@ -10,6 +10,8 @@ public interface SistemaService {
     Sistema createSistema(SistemaCreateDTO dto);
     Optional<Sistema> getSistemaById(Long id);
     List<Sistema> getAllSistemas();
+    Optional<Sistema> getSistemaVisibleParaUsuario(Long id, String mailUsuario);
+    List<Sistema> getSistemasVisiblesParaUsuario(String mailUsuario);
     Sistema updateSistema(Long id, SistemaUpdateDTO dto);
     void deleteSistema(Long id);
 }
