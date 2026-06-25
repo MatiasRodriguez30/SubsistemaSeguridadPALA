@@ -6,15 +6,11 @@ import com.example.subsistemaSeguridad.sistema.exception.SistemaDadoDeBajaExcept
 import com.example.subsistemaSeguridad.sistema.exception.SistemaNotFoundException;
 import com.example.subsistemaSeguridad.shared.EmailNormalizer;
 import com.example.subsistemaSeguridad.usuario.UsuarioRepository;
-import com.example.subsistemaSeguridad.usuariosistema.UsuarioSistema;
-import com.example.subsistemaSeguridad.usuariosistema.UsuarioSistemaRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -24,19 +20,16 @@ public class SistemaServiceImpl implements SistemaService {
     private final SistemaRepository sistemaRepository;
     private final SistemaMapper sistemaMapper;
     private final UsuarioRepository usuarioRepository;
-    private final UsuarioSistemaRepository usuarioSistemaRepository;
 
     @Autowired
     public SistemaServiceImpl(
             SistemaRepository sistemaRepository,
             SistemaMapper sistemaMapper,
-            UsuarioRepository usuarioRepository,
-            UsuarioSistemaRepository usuarioSistemaRepository
+            UsuarioRepository usuarioRepository
     ) {
         this.sistemaRepository = sistemaRepository;
         this.sistemaMapper = sistemaMapper;
         this.usuarioRepository = usuarioRepository;
-        this.usuarioSistemaRepository = usuarioSistemaRepository;
     }
 
     @Override
@@ -62,19 +55,7 @@ public class SistemaServiceImpl implements SistemaService {
         final String normalizedMail = EmailNormalizer.normalize(mailUsuario);
 
         return usuarioRepository.findByMailUsuarioAndFechaBajaUsuarioIsNull(normalizedMail)
-                .flatMap(usuario -> {
-                    final Optional<Sistema> sistemaPropio = sistemaRepository
-                            .findByIdAndUsuarioIdAndFechaBajaSistemaIsNull(id, usuario.getId());
-
-                    if (sistemaPropio.isPresent()) {
-                        return sistemaPropio;
-                    }
-
-                    return usuarioSistemaRepository
-                            .findByUsuarioIdAndSistemaIdAndFechaBajaUsuarioSistemaIsNull(usuario.getId(), id)
-                            .map(UsuarioSistema::getSistema)
-                            .filter(sistema -> !sistema.estaDadoDeBaja());
-                });
+                .flatMap(usuario -> sistemaRepository.findByIdAndUsuarioIdAndFechaBajaSistemaIsNull(id, usuario.getId()));
     }
 
     @Override
@@ -82,20 +63,7 @@ public class SistemaServiceImpl implements SistemaService {
         final String normalizedMail = EmailNormalizer.normalize(mailUsuario);
 
         return usuarioRepository.findByMailUsuarioAndFechaBajaUsuarioIsNull(normalizedMail)
-                .map(usuario -> {
-                    final Map<Long, Sistema> visibles = new LinkedHashMap<>();
-
-                    sistemaRepository.findAllByUsuarioIdAndFechaBajaSistemaIsNull(usuario.getId())
-                            .forEach(sistema -> visibles.put(sistema.getId(), sistema));
-
-                    usuarioSistemaRepository.findAllByUsuarioIdAndFechaBajaUsuarioSistemaIsNull(usuario.getId())
-                            .stream()
-                            .map(UsuarioSistema::getSistema)
-                            .filter(sistema -> sistema != null && !sistema.estaDadoDeBaja())
-                            .forEach(sistema -> visibles.put(sistema.getId(), sistema));
-
-                    return visibles.values().stream().toList();
-                })
+                .map(usuario -> sistemaRepository.findAllByUsuarioIdAndFechaBajaSistemaIsNull(usuario.getId()))
                 .orElse(List.of());
     }
 
